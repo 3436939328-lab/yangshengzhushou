@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.example.springbootdemo.dao.TongueObservationRecordDao">
+  <resultMap id="BaseResultMap" type="org.example.springbootdemo.bean.TongueObservationRecord">
+    <id column="id" property="id" jdbcType="BIGINT" />
+    <result column="user_id" property="userId" jdbcType="BIGINT" />
+    <result column="color" property="color" jdbcType="VARCHAR" />
+    <result column="coating" property="coating" jdbcType="VARCHAR" />
+    <result column="dryness" property="dryness" jdbcType="VARCHAR" />
+    <result column="note" property="note" jdbcType="VARCHAR" />
+    <result column="recorded_at" property="recordedAt" jdbcType="VARCHAR" />
+    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+  </resultMap>
+
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap">
+    select id, user_id, color, coating, dryness, note, recorded_at, create_time
+    from tongue_observation_record
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+
+  <select id="selectByUserId" resultMap="BaseResultMap">
+    select id, user_id, color, coating, dryness, note, recorded_at, create_time
+    from tongue_observation_record
+    where user_id = #{userId,jdbcType=BIGINT}
+    order by id desc
+  </select>
+
+  <delete id="deleteByPrimaryKey">
+    delete from tongue_observation_record where id = #{id,jdbcType=BIGINT}
+  </delete>
+
+  <insert id="insertSelective" parameterType="org.example.springbootdemo.bean.TongueObservationRecord" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    insert into tongue_observation_record
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="userId != null">user_id,</if>
+      <if test="color != null">color,</if>
+      <if test="coating != null">coating,</if>
+      <if test="dryness != null">dryness,</if>
+      <if test="note != null">note,</if>
+      <if test="recordedAt != null">recorded_at,</if>
+      <if test="createTime != null">create_time,</if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="userId != null">#{userId,jdbcType=BIGINT},</if>
+      <if test="color != null">#{color,jdbcType=VARCHAR},</if>
+      <if test="coating != null">#{coating,jdbcType=VARCHAR},</if>
+      <if test="dryness != null">#{dryness,jdbcType=VARCHAR},</if>
+      <if test="note != null">#{note,jdbcType=VARCHAR},</if>
+      <if test="recordedAt != null">#{recordedAt,jdbcType=VARCHAR},</if>
+      <if test="createTime != null">#{createTime,jdbcType=TIMESTAMP},</if>
+    </trim>
+  </insert>
+</mapper>

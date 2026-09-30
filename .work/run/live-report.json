@@ -1,0 +1,30 @@
+{
+  "health": true,
+  "weather": {
+    "city": "济南市",
+    "source": "Open-Meteo",
+    "isFallback": false
+  },
+  "checkInIdempotent": true,
+  "chat": {
+    "source": "deepseek",
+    "characters": 43,
+    "chargedOnce": true,
+    "recovery": true
+  },
+  "suggestions": {
+    "source": "deepseekRag",
+    "count": 5,
+    "plans": 3
+  },
+  "model": {
+    "provider": "deepseek",
+    "model": "deepseek-chat",
+    "configured": true,
+    "status": "available",
+    "lastCheckedAt": "2026-09-08T01:31:51.119692400Z",
+    "message": "Last model request succeeded"
+  },
+  "suggestionsFree": true,
+  "passed": true
+}

@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>养生助手App - 完整实现说明文档</title>
+<style>
+  :root {
+    --brand: #4CAF7A;
+    --brand-dark: #2E8B57;
+    --deep-text: #1A2B23;
+    --muted-text: #6B7F76;
+    --card-bg: #F8FBF9;
+    --border: #D5E5DC;
+    --accent: #E8B86C;
+    --danger: #E5736C;
+    --info: #5B8DBE;
+    --bg: #F0F4F1;
+    --code-bg: #1E2B23;
+    --code-text: #C8E6D0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--deep-text);
+    line-height: 1.75;
+    font-size: 15px;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 0 24px 60px; }
+  /* Cover */
+  .cover {
+    text-align: center;
+    padding: 60px 24px 48px;
+    background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
+    color: #fff;
+    border-radius: 0 0 24px 24px;
+    margin-bottom: 40px;
+  }
+  .cover h1 { font-size: 36px; font-weight: 700; margin-bottom: 8px; letter-spacing: 2px; }
+  .cover .subtitle { font-size: 18px; opacity: .9; margin-bottom: 24px; }
+  .cover .meta { display: inline-flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+  .cover .meta span {
+    background: rgba(255,255,255,.15);
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+  }
+  /* TOC */
+  .toc {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-bottom: 40px;
+  }
+  .toc h2 { font-size: 18px; color: var(--brand-dark); margin-bottom: 12px; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin: 4px 0; }
+  .toc a { color: var(--deep-text); text-decoration: none; transition: color .2s; }
+  .toc a:hover { color: var(--brand); }
+  /* Section */
+  section { margin-bottom: 48px; scroll-margin-top: 20px; }
+  h2 {
+    font-size: 26px;
+    color: var(--brand-dark);
+    border-left: 5px solid var(--brand);
+    padding-left: 16px;
+    margin-bottom: 20px;
+    font-weight: 700;
+  }
+  h3 {
+    font-size: 20px;
+    color: var(--deep-text);
+    margin: 24px 0 12px;
+    font-weight: 600;
+  }
+  h4 {
+    font-size: 16px;
+    color: var(--muted-text);
+    margin: 16px 0 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  p { margin-bottom: 12px; }
+  ul, ol { padding-left: 22px; margin-bottom: 12px; }
+  li { margin: 4px 0; }
+  code {
+    background: rgba(76,175,122,.1);
+    color: var(--brand-dark);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+    font-size: 13px;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 16px 20px;
+    border-radius: 10px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+  pre code { background: none; color: inherit; padding: 0; }
+  /* Table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+    font-size: 14px;
+  }
+  th {
+    background: var(--brand);
+    color: #fff;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+  }
+  td {
+    border: 1px solid var(--border);
+    padding: 8px 14px;
+    vertical-align: top;
+  }
+  tbody tr:nth-child(even) { background: var(--card-bg); }
+  tbody tr:hover { background: rgba(76,175,122,.06); }
+  /* Callout */
+  .callout {
+    border-left: 4px solid var(--info);
+    background: rgba(91,141,190,.08);
+    padding: 14px 18px;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 16px;
+  }
+  .callout.warning {
+    border-color: var(--accent);
+    background: rgba(232,184,108,.08);
+  }
+  .callout.danger {
+    border-color: var(--danger);
+    background: rgba(229,115,108,.08);
+  }
+  .callout-title { font-weight: 600; margin-bottom: 4px; }
+  /* Architecture diagram */
+  .arch-diagram {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px 24px;
+    margin-bottom: 20px;
+    text-align: center;
+    overflow-x: auto;
+  }
+  .arch-layer {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin: 12px 0;
+    flex-wrap: wrap;
+  }
+  .arch-box {
+    border: 2px solid var(--brand);
+    border-radius: 10px;
+    padding: 12px 20px;
+    background: var(--card-bg);
+    min-width: 140px;
+    text-align: center;
+  }
+  .arch-box.frontend { border-color: var(--info); background: rgba(91,141,190,.08); }
+  .arch-box.backend { border-color: var(--brand); background: rgba(76,175,122,.08); }
+  .arch-box.node { border-color: var(--accent); background: rgba(232,184,108,.08); }
+  .arch-box.db { border-color: var(--danger); background: rgba(229,115,108,.08); }
+  .arch-box h5 { font-size: 14px; margin-bottom: 4px; }
+  .arch-box p { font-size: 12px; color: var(--muted-text); margin: 0; }
+  .arch-arrow { font-size: 24px; color: var(--muted-text); align-self: center; }
+  /* Badge */
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .badge-green { background: rgba(76,175,122,.15); color: var(--brand-dark); }
+  .badge-blue { background: rgba(91,141,190,.15); color: var(--info); }
+  .badge-orange { background: rgba(232,184,108,.15); color: #B8881C; }
+  .badge-red { background: rgba(229,115,108,.15); color: var(--danger); }
+  /* Flowchart */
+  .flow-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .flow-num {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--brand);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .flow-content { flex: 1; }
+  .flow-content h5 { font-size: 15px; margin-bottom: 2px; }
+  .flow-content p { font-size: 14px; color: var(--muted-text); margin: 0; }
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 32px 0 16px;
+    color: var(--muted-text);
+    font-size: 13px;
+    border-top: 1px solid var(--border);
+    margin-top: 40px;
+  }
+</style>
+</head>
+<body>
+
+<!-- Cover -->
+<div class="cover">
+  <h1>养生助手 App</h1>
+  <div class="subtitle">完整实现说明文档</div>
+  <div class="meta">
+    <span>HarmonyOS ArkTS</span>
+    <span>Spring Boot 3.3.6</span>
+    <span>Node.js + LangGraph</span>
+    <span>MySQL + RAG</span>
+  </div>
+</div>
+
+<!-- TOC -->
+<div class="container">
+<div class="toc">
+  <h2>目录</h2>
+  <ol>
+    <li><a href="#sec1">项目概述</a></li>
+    <li><a href="#sec2">系统架构与三端关系</a></li>
+    <li><a href="#sec3">技术栈总览</a></li>
+    <li><a href="#sec4">HarmonyOS 前端 App 实现</a></li>
+    <li><a href="#sec5">Spring Boot 主后端实现</a></li>
+    <li><a href="#sec6">Node.js AI 编排后端实现</a></li>
+    <li><a href="#sec7">数据库设计与表结构</a></li>
+    <li><a href="#sec8">AI / RAG 实现机制</a></li>
+    <li><a href="#sec9">认证与权限系统</a></li>
+    <li><a href="#sec10">角色系统与多端界面</a></li>
+    <li><a href="#sec11">核心业务流程</a></li>
+    <li><a href="#sec12">API 接口完整清单</a></li>
+    <li><a href="#sec13">项目部署与启动指南</a></li>
+    <li><a href="#sec14">默认账号与测试数据</a></li>
+  </ol>
+</div>
+
+<!-- ==================== 1. 项目概述 ==================== -->
+<section id="sec1">
+<h2>1. 项目概述</h2>
+
+<p><strong>养生助手</strong>是一款基于 HarmonyOS 开发的智能健康管理应用，定位为"本地记录驱动的日常养生助手"。项目涵盖三端完整实现：HarmonyOS 前端 App、Spring Boot 主后端、Node.js AI 编排后端，融合了中医体质问卷、天气养生建议、AI 智能问答、RAG 知识检索、在线问诊、积分商城等功能。</p>
+
+<div class="callout">
+  <div class="callout-title">核心定位</div>
+  以用户健康档案为中心，结合天气环境、体质倾向和中医知识库，通过 AI 提供个性化的养生建议。支持用户、医生、管理员三种角色，实现问诊、健康管理和运营管理闭环。
+</div>
+
+<h3>1.1 核心功能</h3>
+<table>
+  <tr><th>功能模块</th><th>说明</th></tr>
+  <tr><td>AI 养生助手</td><td>基于 DeepSeek / 本地 LLM，结合天气、体质、健康档案生成个性化建议，支持多轮对话</td></tr>
+  <tr><td>RAG 知识检索</td><td>基于 MySQL 关键词检索 + Milvus 向量检索（预留），从中医知识库提取相关知识增强 AI 回复</td></tr>
+  <tr><td>中医体质问卷</td><td>标准化问卷评分，判定九种体质倾向（平和质、气虚质、阳虚质等），提供体质专属建议</td></tr>
+  <tr><td>天气养生联动</td><td>实时获取定位天气，根据温湿度、天气状况生成养生提醒（湿热、干燥、风寒等）</td></tr>
+  <tr><td>舌象记录</td><td>用户记录舌质颜色、舌苔、干燥度等，作为 AI 问答的上下文</td></tr>
+  <tr><td>健康指标管理</td><td>记录血压、血糖、心率等指标，支持趋势分析和状态判断</td></tr>
+  <tr><td>在线问诊</td><td>用户向医生发起问诊，支持图文消息交流，医生可查看用户健康档案</td></tr>
+  <tr><td>积分商城</td><td>每日签到、AI 问答消耗积分、商品兑换、订单管理</td></tr>
+  <tr><td>角色化界面</td><td>用户端（首页/助手/问诊/档案/我的）、医生端（工作台/问诊/助手/资料/我的）、管理员端（总览/人员/问答/问诊/我的）</td></tr>
+  <tr><td>系统提醒</td><td>基于 HarmonyOS <code>reminderAgentManager</code> 和 <code>notificationManager</code> 实现本地健康提醒</td></tr>
+  <tr><td>管理员后台</td><td>用户管理、医生管理、问答日志、问诊管理、商品管理等</td></tr>
+</table>
+</section>
+
+<!-- ==================== 2. 系统架构 ==================== -->
+<section id="sec2">
+<h2>2. 系统架构与三端关系</h2>
+
+<div class="arch-diagram">
+  <div class="arch-layer">
+    <div class="arch-box frontend">
+      <h5>HarmonyOS App</h5>
+      <p>ArkTS / ArkUI<br>entry 模块<br>端口: 设备</p>
+    </div>
+    <div class="arch-arrow">⟷ HTTP ⟷</div>
+    <div class="arch-box backend">
+      <h5>Spring Boot 后端</h5>
+      <p>Java 17 / Spring Boot 3.3.6<br>MyBatis + MySQL<br>端口: 8181</p>
+    </div>
+    <div class="arch-arrow">⟷ HTTP ⟷</div>
+    <div class="arch-box node">
+      <h5>Node.js AI 后端</h5>
+      <p>LangGraph + DeepSeek<br>规则引擎兜底<br>端口: 8787</p>
+    </div>
+  </div>
+  <div style="margin-top: 24px;">
+    <div class="arch-arrow">⬇</div>
+  </div>
+  <div class="arch-layer" style="margin-top: 8px;">
+    <div class="arch-box db">
+      <h5>MySQL</h5>
+      <p>yangsheng_db<br>用户/问诊/健康档案/RAG知识库/积分</p>
+    </div>
+    <div class="arch-box db">
+      <h5>外部 API</h5>
+      <p>Open-Meteo 天气<br>DeepSeek LLM<br>Ollama 本地模型（可选）</p>
+    </div>
+  </div>
+</div>
+
+<h3>2.1 三端职责划分</h3>
+<table>
+  <tr><th>端</th><th>目录</th><th>职责</th><th>端口</th></tr>
+  <tr>
+    <td><span class="badge badge-blue">前端</span></td>
+    <td><code>d:\yangshengzhushou\entry</code></td>
+    <td>HarmonyOS App UI、本地数据存储、AI 服务调用、系统提醒</td>
+    <td>设备端</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-green">主后端</span></td>
+    <td><code>D:\SpringBoot\SpringBootDemo</code></td>
+    <td>认证授权、用户/医生/问诊/健康档案管理、RAG 检索、积分商城、天气代理</td>
+    <td>8181</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-orange">AI 后端</span></td>
+    <td><code>d:\yangshengzhushou\yangshengzhushou_db</code></td>
+    <td>LangGraph 工作流编排、DeepSeek LLM 调用、规则兜底、风险检测</td>
+    <td>8787</td>
+  </tr>
+</table>
+
+<h3>2.2 调用链路</h3>
+<div class="callout">
+  <div class="callout-title">App → Spring Boot → Node.js AI → LLM</div>
+  <p>App 发起 HTTP 请求到 Spring Boot（8181），Spring Boot 处理认证后，将 AI 相关请求转发到 Node.js（8787），Node.js 通过 LangGraph 工作流编排后调用 DeepSeek LLM 生成回复，结果原路返回。若 LLM 不可用，Node.js 规则引擎兜底回复。</p>
+</div>
+<p>同时 Spring Boot 自身也实现了 RAG 检索（<code>KnowledgeRetrievalService</code>）和 AI 客户端（<code>OpenAiCompatibleHealthQuestionAiClient</code>），可以直接调用 DeepSeek API。Node.js 后端作为可选的 AI 编排层，提供更复杂的工作流能力。</p>
+</section>
+
+<!-- ==================== 3. 技术栈 ==================== -->
+<section id="sec3">
+<h2>3. 技术栈总览</h2>
+
+<h3>3.1 前端（HarmonyOS App）</h3>
+<table>
+  <tr><th>维度</th><th>技术</th></tr>
+  <tr><td>平台</td><td>HarmonyOS，targetSdkVersion 6.0.2(22)，Stage 模型</td></tr>
+  <tr><td>UI 框架</td><td>ArkTS / ArkUI（声明式 UI）</td></tr>
+  <tr><td>网络请求</td><td><code>@kit.NetworkKit</code> 的 <code>http</code> 模块</td></tr>
+  <tr><td>本地存储</td><td><code>@kit.ArkData</code> 的 <code>preferences</code> 模块</td></tr>
+  <tr><td>定位</td><td><code>@kit.LocationKit</code> 的 <code>geoLocationManager</code></td></tr>
+  <tr><td>通知提醒</td><td><code>@ohos.notificationManager</code> + <code>@ohos.reminderAgentManager</code></td></tr>
+  <tr><td>测试</td><td>hypium 1.0.25 + hamock 1.0.0</td></tr>
+  <tr><td>构建工具</td><td>hvigor</td></tr>
+</table>
+
+<h3>3.2 主后端（Spring Boot）</h3>
+<table>
+  <tr><th>维度</th><th>技术</th></tr>
+  <tr><td>框架</td><td>Spring Boot 3.3.6</td></tr>
+  <tr><td>语言</td><td>Java 17</td></tr>
+  <tr><td>ORM</td><td>MyBatis Spring Boot Starter 3.0.4</td></tr>
+  <tr><td>数据库</td><td>MySQL（yangsheng_db）</td></tr>
+  <tr><td>安全</td><td>Spring Security Crypto + 自定义 Token 认证</td></tr>
+  <tr><td>模板引擎</td><td>FreeMarker</td></tr>
+  <tr><td>AI 客户端</td><td>Java HttpClient → DeepSeek / OpenAI 兼容 API</td></tr>
+  <tr><td>RAG</td><td>JdbcTemplate 关键词检索 + Milvus 向量检索（预留）</td></tr>
+  <tr><td>构建工具</td><td>Maven</td></tr>
+</table>
+
+<h3>3.3 AI 编排后端（Node.js）</h3>
+<table>
+  <tr><th>维度</th><th>技术</th></tr>
+  <tr><td>运行时</td><td>Node.js >= 20</td></tr>
+  <tr><td>HTTP 服务</td><td>Node.js 原生 <code>http</code> 模块</td></tr>
+  <tr><td>AI 工作流</td><td><code>@langchain/langgraph</code> 1.4.5 + <code>@langchain/core</code> 1.2.1</td></tr>
+  <tr><td>LLM</td><td>DeepSeek API / 本地 Ollama（OpenAI 兼容）</td></tr>
+  <tr><td>密码哈希</td><td>Node.js <code>crypto</code> PBKDF2</td></tr>
+  <tr><td>用户存储</td><td>JSON 文件（<code>data/users.json</code>）</td></tr>
+  <tr><td>天气</td><td>Open-Meteo API</td></tr>
+</table>
+</section>
+
+<!-- ==================== 4. 前端实现 ==================== -->
+<section id="sec4">
+<h2>4. HarmonyOS 前端 App 实现</h2>
+
+<h3>4.1 项目入口与模块配置</h3>
+<p><strong>入口能力</strong>：<code>EntryAbility.ets</code> 继承 <code>UIAbility</code>，在 <code>onWindowStageCreate</code> 中加载 <code>pages/Index</code> 页面，并配置透明系统栏。</p>
+
+<p><strong>模块配置</strong>（<code>module.json5</code>）：</p>
+<table>
+  <tr><th>属性</th><th>值</th><th>说明</th></tr>
+  <tr><td><code>name</code></td><td><code>entry</code></td><td>模块名称</td></tr>
+  <tr><td><code>type</code></td><td><code>entry</code></td><td>入口模块</td></tr>
+  <tr><td><code>mainElement</code></td><td><code>EntryAbility</code></td><td>主 Ability</td></tr>
+  <tr><td><code>deviceTypes</code></td><td><code>["phone"]</code></td><td>仅适配手机</td></tr>
+</table>
+
+<h4>权限声明</h4>
+<table>
+  <tr><th>权限</th><th>用途</th></tr>
+  <tr><td><code>ohos.permission.INTERNET</code></td><td>网络访问（API 请求）</td></tr>
+  <tr><td><code>ohos.permission.PUBLISH_AGENT_REMINDER</code></td><td>发布系统健康提醒</td></tr>
+  <tr><td><code>ohos.permission.APPROXIMATELY_LOCATION</code></td><td>近似定位（天气获取）</td></tr>
+  <tr><td><code>ohos.permission.LOCATION</code></td><td>精确定位（天气获取）</td></tr>
+</table>
+
+<h3>4.2 主页面架构（Index.ets）</h3>
+<p>主页面 <code>Index.ets</code> 是整个 App 的核心中枢，通过状态机管理页面流转：</p>
+
+<pre><code>isAuthChecked = false
+  → AuthCheckingView          // 启动加载中
+
+authSession === null
+  → AuthView                  // 登录/注册页
+
+authSession !== null && !hasEnteredApp
+  → GuideView                 // 首次引导页
+
+authSession !== null && hasEnteredApp
+  → MainView                  // 主界面（AppHeader + 内容 + TabBar）</code></pre>
+
+<h4>关键状态变量</h4>
+<table>
+  <tr><th>状态变量</th><th>类型</th><th>用途</th></tr>
+  <tr><td><code>authSession</code></td><td>AuthSession</td><td>当前登录会话（token + user）</td></tr>
+  <tr><td><code>hasEnteredApp</code></td><td>boolean</td><td>是否完成引导页</td></tr>
+  <tr><td><code>currentTab</code></td><td>number</td><td>当前底部 Tab 索引</td></tr>
+  <tr><td><code>currentProfile</code></td><td>HealthProfile</td><td>当前用户健康档案</td></tr>
+  <tr><td><code>currentWeather</code></td><td>WeatherWellness</td><td>当前天气数据</td></tr>
+  <tr><td><code>homeSuggestion</code></td><td>SuggestionResult</td><td>首页 AI 建议结果</td></tr>
+  <tr><td><code>shortcut</code></td><td>string</td><td>快捷入口标记（体质问卷/舌象记录）</td></tr>
+  <tr><td><code>solarTerm</code></td><td>SolarTermInfo</td><td>当前节气信息</td></tr>
+</table>
+
+<h4>启动加载流程</h4>
+<div class="flow-step">
+  <div class="flow-num">1</div>
+  <div class="flow-content">
+    <h5>创建 Repository</h5>
+    <p><code>aboutToAppear()</code> 中创建 <code>AuthSessionRepository</code> 和 <code>HealthProfileRepository</code>，注册会话失效回调</p>
+  </div>
+</div>
+<div class="flow-step">
+  <div class="flow-num">2</div>
+  <div class="flow-content">
+    <h5>加载连接设置</h5>
+    <p>从 <code>preferences</code> 读取保存的后端 baseUrl，设置到 <code>ApiConfig</code> 运行时变量</p>
+  </div>
+</div>
+<div class="flow-step">
+  <div class="flow-num">3</div>
+  <div class="flow-content">
+    <h5>校验持久化会话</h5>
+    <p>如果有保存的 token，请求 <code>/api/auth/me</code> 验证；成功则进入主界面，失败则清除会话回到登录页</p>
+  </div>
+</div>
+
+<h3>4.3 服务层（36 个 Service 文件）</h3>
+<p>前端服务层位于 <code>entry/src/main/ets/services/</code>，共 36 个文件，按功能分类如下：</p>
+
+<h4>认证与会话</h4>
+<table>
+  <tr><th>服务文件</th><th>职责</th></tr>
+  <tr><td><code>AuthService.ets</code></td><td>登录/注册/验证码/密码重置、Token 管理、会话序列化</td></tr>
+  <tr><td><code>SessionInvalidationService.ets</code></td><td>全局 401 会话失效回调</td></tr>
+  <tr><td><code>ConnectionSettings.ets</code></td><td>后端地址持久化管理</td></tr>
+  <tr><td><code>ApiConfig.ets</code></td><td>统一 API 地址和路径配置、候选地址</td></tr>
+</table>
+
+<h4>AI 与建议</h4>
+<table>
+  <tr><th>服务文件</th><th>职责</th></tr>
+  <tr><td><code>AIService.ets</code></td><td>本地离线养生建议生成（兜底）</td></tr>
+  <tr><td><code>AssistantReplyService.ets</code></td><td>AI 助手后端调用、回复解析、不可用兜底</td></tr>
+  <tr><td><code>SuggestionService.ets</code></td><td>场景建议请求（天气+体质+位置）</td></tr>
+  <tr><td><code>NodeAiStatusService.ets</code></td><td>Node.js AI 后端状态检查</td></tr>
+  <tr><td><code>BackendStatusService.ets</code></td><td>Spring Boot 后端健康检查</td></tr>
+</table>
+
+<h4>健康档案与数据</h4>
+<table>
+  <tr><th>服务文件</th><th>职责</th></tr>
+  <tr><td><code>ProfileRepository.ets</code></td><td>健康档案本地读写 + 后端同步（档案/问卷/舌象/指标/提醒）</td></tr>
+  <tr><td><code>QuestionnaireService.ets</code></td><td>体质问卷题目、评分、结果生成</td></tr>
+  <tr><td><code>HealthDataService.ets</code></td><td>健康档案数据整理</td></tr>
+  <tr><td><code>ReportService.ets</code></td><td>指标解读与月度报告</td></tr>
+  <tr><td><code>WellnessContentService.ets</code></td><td>首页内容、计划、快捷入口</td></tr>
+  <tr><td><code>KnowledgeService.ets</code></td><td>内置养生知识（药膳/食物禁忌/穴位）</td></tr>
+  <tr><td><code>ChatHistoryRepository.ets</code></td><td>聊天历史本地存储</td></tr>
+</table>
+
+<h4>问诊与医生</h4>
+<table>
+  <tr><th>服务文件</th><th>职责</th></tr>
+  <tr><td><code>ConsultationService.ets</code></td><td>问诊 API：创建/列表/详情/消息</td></tr>
+  <tr><td><code>DoctorProfileService.ets</code></td><td>医生资料获取与保存</td></tr>
+</table>
+
+<h4>积分与奖励</h4>
+<table>
+  <tr><th>服务文件</th><th>职责</th></tr>
+  <tr><td><code>RewardsService.ets</code></td><td>积分账户/签到/商品/订单/流水</td></tr>
+  <tr><td><code>PendingOrderRepository.ets</code></td><td>待处理订单本地存储</td></tr>
+</table>
+
+<h4>管理员服务</h4>
+<table>
+  <tr><th>服务文件</th><th>职责</th></tr>
+  <tr><td><code>AdminPeopleService.ets</code></td><td>人员列表/新增/修改/删除</td></tr>
+  <tr><td><code>AdminPeopleFilterService.ets</code></td><td>人员筛选</td></tr>
+  <tr><td><code>AdminOverviewMetricsService.ets</code></td><td>管理员总览指标</td></tr>
+  <tr><td><code>AdminTabMetricsService.ets</code></td><td>Tab 指标</td></tr>
+  <tr><td><code>AdminAssistantLogService.ets</code></td><td>问答日志</td></tr>
+  <tr><td><code>AdminRoleService.ets</code></td><td>角色管理</td></tr>
+</table>
+
+<h4>天气与定位</h4>
+<table>
+  <tr><th>服务文件</th><th>职责</th></tr>
+  <tr><td><code>WeatherService.ets</code></td><td>定位获取、天气查询、反地理编码、多候选地址重试</td></tr>
+</table>
+
+<h4>系统与工具</h4>
+<table>
+  <tr><th>服务文件</th><th>职责</th></tr>
+  <tr><td><code>NotificationService.ets</code></td><td>系统提醒管理（reminderAgentManager）</td></tr>
+  <tr><td><code>PrivacyService.ets</code></td><td>隐私权限状态</td></tr>
+  <tr><td><code>PermissionStatusRepository.ets</code></td><td>权限状态持久化</td></tr>
+  <tr><td><code>RequestErrorService.ets</code></td><td>HTTP 错误码中文转换</td></tr>
+  <tr><td><code>SaveFeedbackService.ets</code></td><td>反馈保存</td></tr>
+  <tr><td><code>DeviceService.ets</code></td><td>设备状态管理</td></tr>
+  <tr><td><code>EmptyStateService.ets</code></td><td>空状态提示</td></tr>
+  <tr><td><code>RoleExperienceService.ets</code></td><td>角色规范化、Tab 映射</td></tr>
+  <tr><td><code>PersonalPlanService.ets</code></td><td>个人计划</td></tr>
+</table>
+
+<h3>4.4 核心组件</h3>
+<table>
+  <tr><th>组件</th><th>文件</th><th>功能</th></tr>
+  <tr><td><code>AppHeader</code></td><td>AppHeader.ets</td><td>顶部标题栏，显示"养生助手"品牌和风险等级标签</td></tr>
+  <tr><td><code>WellnessTabBar</code></td><td>TabBar.ets</td><td>底部角色化导航栏，动态渲染 Tab 标题和选中状态</td></tr>
+  <tr><td><code>AuthView</code></td><td>AuthView.ets</td><td>登录/注册/密码重置页，支持密码登录和验证码登录</td></tr>
+  <tr><td><code>ConnectionPanel</code></td><td>ConnectionPanel.ets</td><td>服务器连接设置面板，输入后端地址并测试连接</td></tr>
+  <tr><td><code>GuideView</code></td><td>GuideView.ets</td><td>首次引导页，展示功能介绍幻灯片</td></tr>
+  <tr><td><code>QuickActionView</code></td><td>QuickActionView.ets</td><td>首页快捷入口（体质问卷/舌象记录覆盖层）</td></tr>
+</table>
+
+<h3>4.5 数据模型</h3>
+
+<h4>健康档案模型（ProfileModels.ets）</h4>
+<pre><code>HealthProfile
+  ├── id: string
+  ├── displayName: string
+  ├── constitution: ConstitutionResult    // 体质结果
+  ├── questionnaireRecords: QuestionnaireRecord[]  // 问卷历史
+  ├── healthIndicators: HealthIndicatorEntry[]     // 健康指标
+  ├── tongueNotes: TongueObservationNote[]         // 舌象记录
+  ├── reminderPreferences: ReminderPreference[]    // 提醒偏好
+  └── updatedAt: number</code></pre>
+
+<h4>养生数据模型（WellnessModels.ets）</h4>
+<table>
+  <tr><th>接口</th><th>用途</th></tr>
+  <tr><td><code>WeatherWellness</code></td><td>天气养生数据（城市/温湿度/建议/风险等级/来源）</td></tr>
+  <tr><td><code>WellnessLocation</code></td><td>位置信息（城市/区县/经纬度）</td></tr>
+  <tr><td><code>SolarTermInfo</code></td><td>节气信息（名称/日期/饮食建议/起居建议）</td></tr>
+  <tr><td><code>WellnessPlan</code></td><td>养生计划（标题/时间/详情/标签）</td></tr>
+  <tr><td><code>ChatMessage</code></td><td>聊天消息（角色/内容/来源/建议/计划/风险）</td></tr>
+  <tr><td><code>SuggestionResult</code></td><td>建议结果（来源/风险/场景/摘要/建议列表/计划/免责声明）</td></tr>
+  <tr><td><code>ConstitutionResult</code></td><td>体质结果（名称/分数/建议）</td></tr>
+  <tr><td><code>HerbalRecipe</code></td><td>药膳（名称/食材/功效/适宜人群）</td></tr>
+  <tr><td><code>AcupointGuide</code></td><td>穴位指南（名称/位置/方法）</td></tr>
+  <tr><td><code>FoodContraindication</code></td><td>食物禁忌（食物/人群/属性/警告）</td></tr>
+</table>
+
+<h3>4.6 API 配置与连接策略</h3>
+<p>前端通过 <code>ApiConfig.ets</code> 统一管理后端地址：</p>
+<ul>
+  <li><strong>默认地址</strong>：<code>http://172.20.10.10:8181</code></li>
+  <li><strong>候选地址</strong>（自动重试）：运行时地址、默认地址、<code>http://10.0.2.2:8181</code>（模拟器）、<code>http://127.0.0.1:8181</code></li>
+  <li><strong>普通超时</strong>：6 秒</li>
+  <li><strong>AI 超时</strong>：90 秒</li>
+  <li><strong>连接设置</strong>：通过 <code>ConnectionPanel</code> 组件让用户在 App 内修改后端地址，持久化到 <code>preferences</code></li>
+</ul>
+</section>
+
+<!-- ==================== 5. Spring Boot 后端 ==================== -->
+<section id="sec5">
+<h2>5. Spring Boot 主后端实现</h2>
+
+<h3>5.1 项目结构</h3>
+<pre><code>org.example.springbootdemo/
+├── SpringBootDemoApplication.java          # 主启动类
+├── common/
+│   ├── GlobalExceptionHandler.java         # 全局异常处理
+│   └── result/ApiResponse.java             # 统一响应格式
+├── controller/                             # 14个Controller
+├── service/                                # 17个Service
+├── dao/                                    # 11个MyBatis Mapper
+├── auth/                                   # 认证拦截器+Token+权限
+├── ai/                                     # AI客户端+DTO
+├── rag/                                    # RAG检索+知识库
+├── config/                                 # 6个配置初始化类
+├── rewards/                                # 积分商城
+├── bean/                                   # 实体类
+└── weather/                                # 天气服务</code></pre>
+
+<h3>5.2 分层架构</h3>
+<table>
+  <tr><th>层</th><th>说明</th><th>关键类</th></tr>
+  <tr><td>Controller 层</td><td>接收 HTTP 请求，参数校验，权限检查，返回统一响应</td><td>AuthController, AssistantController, ConsultationController 等</td></tr>
+  <tr><td>Service 层</td><td>业务逻辑，AI 调用，RAG 检索，积分扣费</td><td>AssistantChatService, HealthQuestionAiService, RagSuggestionService 等</td></tr>
+  <tr><td>DAO 层</td><td>MyBatis 注解 Mapper + XML Mapper</td><td>UserDao, ConsultationDao, HealthArchiveDao 等</td></tr>
+  <tr><td>认证层</td><td>Token 拦截、权限校验</td><td>AuthInterceptor, TokenStore, PermissionService</td></tr>
+  <tr><td>AI 层</td><td>LLM 调用、提示词构建</td><td>OpenAiCompatibleHealthQuestionAiClient, HealthQuestionPromptBuilder</td></tr>
+  <tr><td>RAG 层</td><td>知识检索、建议生成</td><td>KnowledgeRetrievalService, RagSuggestionService, LocalLlmClient</td></tr>
+</table>
+
+<h3>5.3 统一响应格式（ApiResponse）</h3>
+<pre><code>{
+  "code": 200,          // 状态码
+  "message": "success", // 提示消息
+  "data": ...           // 业务数据
+}</code></pre>
+
+<h3>5.4 配置类与启动初始化</h3>
+<p>Spring Boot 启动时通过 <code>CommandLineRunner</code> 执行多个初始化类：</p>
+<table>
+  <tr><th>初始化类</th><th>职责</th></tr>
+  <tr><td><code>UserProfileSchemaInitializer</code></td><td>给 sys_user 表添加 email/birthday/avatar 列（最高优先级）</td></tr>
+  <tr><td><code>PrivateKnowledgeBaseInitializer</code></td><td>创建 RAG 知识库表并初始化种子数据</td></tr>
+  <tr><td><code>HealthDetailSchemaInitializer</code></td><td>创建体质问卷、健康指标、舌象记录表</td></tr>
+  <tr><td><code>DoctorProfileSchemaInitializer</code></td><td>创建医生档案表</td></tr>
+  <tr><td><code>DataInitializer</code></td><td>初始化角色（ADMIN/ADVISER/USER）和 3 个默认用户</td></tr>
+  <tr><td><code>RewardsSchemaInitializer</code></td><td>创建积分账户、流水、商品、订单表</td></tr>
+</table>
+
+<h3>5.5 关键配置参数（application.yml）</h3>
+<table>
+  <tr><th>配置项</th><th>默认值</th><th>说明</th></tr>
+  <tr><td><code>server.port</code></td><td>8181</td><td>服务端口</td></tr>
+  <tr><td><code>spring.datasource.url</code></td><td>jdbc:mysql://localhost:3306/yangsheng_db</td><td>MySQL 连接</td></tr>
+  <tr><td><code>app.auth.token-secret</code></td><td>dev-change-me-token-secret</td><td>Token 签名密钥</td></tr>
+  <tr><td><code>app.auth.token-ttl-seconds</code></td><td>604800</td><td>Token 有效期（7 天）</td></tr>
+  <tr><td><code>app.weather.base-url</code></td><td>https://api.open-meteo.com/v1/forecast</td><td>天气 API</td></tr>
+  <tr><td><code>app.node-ai.base-url</code></td><td>http://127.0.0.1:8787</td><td>Node.js AI 后端</td></tr>
+  <tr><td><code>app.health-ai.base-url</code></td><td>https://api.deepseek.com</td><td>DeepSeek AI API</td></tr>
+  <tr><td><code>app.health-ai.model</code></td><td>deepseek-chat</td><td>AI 模型</td></tr>
+  <tr><td><code>app.health-ai.temperature</code></td><td>0.2</td><td>生成温度</td></tr>
+  <tr><td><code>app.health-ai.memory-window</code></td><td>4</td><td>对话记忆窗口（轮数）</td></tr>
+  <tr><td><code>app.rag.top-k</code></td><td>6</td><td>RAG 检索数量</td></tr>
+  <tr><td><code>app.rag.embedding-model</code></td><td>bge-m3</td><td>Embedding 模型</td></tr>
+</table>
+</section>
+
+<!-- ==================== 6. Node.js 后端 ==================== -->
+<section id="sec6">
+<h2>6. Node.js AI 编排后端实现</h2>
+
+<h3>6.1 项目结构</h3>
+<pre><code>yangshengzhushou_db/
+├── src/
+│   ├── server.js                    # HTTP 服务主入口
+│   ├── llmClient.js                 # LLM 请求客户端
+│   ├── llmConfig.js                 # LLM 配置解析
+│   ├── envLoader.js                 # .env 加载器
+│   ├── authService.js               # 用户认证（JSON 文件存储）
+│   ├── ruleAssistant.js             # 规则引擎（关键词匹配兜底）
+│   └── agent/
+│       └── healthAssistantGraph.js  # LangGraph 健康助手工作流
+├── data/
+│   └── users.json                   # 用户数据
+└── test/
+    ├── llm.test.js
+    ├── graph.test.js
+    └── server.test.js</code></pre>
+
+<h3>6.2 HTTP 路由</h3>
+<p>使用 Node.js 原生 <code>http.createServer</code>，所有响应携带 CORS 头：</p>
+<table>
+  <tr><th>方法</th><th>路径</th><th>功能</th></tr>
+  <tr><td>GET</td><td><code>/api/health</code></td><td>健康检查</td></tr>
+  <tr><td>GET</td><td><code>/api/weather/current</code></td><td>天气查询（支持经纬度参数）</td></tr>
+  <tr><td>POST</td><td><code>/api/auth/register</code></td><td>用户注册</td></tr>
+  <tr><td>POST</td><td><code>/api/auth/login</code></td><td>用户登录</td></tr>
+  <tr><td>POST</td><td><code>/api/ai/chat</code></td><td>AI 聊天（LangGraph 工作流）</td></tr>
+  <tr><td>POST</td><td><code>/api/ai/suggestions</code></td><td>AI 养生建议</td></tr>
+</table>
+
+<h3>6.3 LangGraph 工作流</h3>
+<p>这是 Node.js 后端的核心，通过 <code>@langchain/langgraph</code> 构建健康助手状态机：</p>
+
+<div class="arch-diagram">
+<pre><code>START → buildMemoryContext → detectRisk
+                         ├── [riskLevel=urgent] → buildSafetyReply → normalizeReply → buildPlan → attachPlan → END
+                         └── [riskLevel=normal] → generateReply  → normalizeReply → buildPlan → attachPlan → END</code></pre>
+</div>
+
+<table>
+  <tr><th>节点</th><th>功能</th></tr>
+  <tr><td><code>buildMemoryContext</code></td><td>从 profile 和 history 构建记忆上下文（体质 + 舌象 + 指标 + 最近对话）</td></tr>
+  <tr><td><code>detectRisk</code></td><td>关键词检测风险信号（胸痛/呼吸困难/晕倒/剧烈头痛等），返回 urgent 或 normal</td></tr>
+  <tr><td><code>buildSafetyReply</code></td><td>风险为 urgent 时直接返回规则兜底回复，不调用 LLM</td></tr>
+  <tr><td><code>generateReply</code></td><td>风险为 normal 时调用 LLM 生成回复（可注入自定义 LLM 函数）</td></tr>
+  <tr><td><code>normalizeReply</code></td><td>标准化回复结构，添加 <code>workflow: 'langgraph'</code> 标记</td></tr>
+  <tr><td><code>buildPlan</code></td><td>根据回复生成三时段养生计划（morning/afternoon/evening）</td></tr>
+  <tr><td><code>attachPlan</code></td><td>将 plan 合并到最终回复</td></tr>
+</table>
+
+<div class="callout danger">
+  <div class="callout-title">安全设计</div>
+  风险等级为 urgent 时，直接走规则兜底回复，绕过 LLM，确保紧急风险信号不会由 AI 生成可能不安全的建议。
+</div>
+
+<h3>6.4 LLM 集成</h3>
+<p><strong>配置解析</strong>（<code>llmConfig.js</code>）按优先级解析：</p>
+<ul>
+  <li><code>DEEPSEEK_API_KEY</code> / <code>LOCAL_LLM_API_KEY</code> / <code>LLM_API_KEY</code> → apiKey</li>
+  <li><code>LOCAL_LLM_BASE_URL</code> → 本地 OpenAI 兼容服务（如 Ollama）</li>
+  <li>无配置时 → 走规则引擎兜底</li>
+</ul>
+
+<p><strong>提示词构建</strong>（<code>buildLlmPrompt</code>）组合以下信息：</p>
+<ol>
+  <li>系统提示（中医养生助手 + JSON 格式要求）</li>
+  <li>用户体质倾向</li>
+  <li>健康档案摘要（舌象/健康指标/提醒设置）</li>
+  <li>最近对话历史（最多 6 条）</li>
+  <li>当前天气信息（温度/湿度/天气风险）</li>
+  <li>用户当前问题</li>
+</ol>
+
+<h3>6.5 规则引擎</h3>
+<p>当 LLM 不可用时，<code>ruleAssistant.js</code> 通过关键词匹配生成养生建议，覆盖 6 类场景：</p>
+<table>
+  <tr><th>场景</th><th>关键词</th><th>建议方向</th></tr>
+  <tr><td><span class="badge badge-red">紧急风险</span></td><td>胸痛/呼吸困难/晕倒/剧烈头痛/半身麻木/说话不清</td><td>及时就医，停止自行调理</td></tr>
+  <tr><td><span class="badge badge-blue">睡眠</span></td><td>失眠/睡不着/熬夜</td><td>睡前放松，减少咖啡因，固定入睡时间</td></tr>
+  <tr><td><span class="badge badge-green">饮食</span></td><td>饮食/胃口/清淡/脾胃/消化</td><td>规律三餐，少冰冷，清淡饮食</td></tr>
+  <tr><td><span class="badge badge-orange">乏累</span></td><td>疲劳/困/没精神/气虚</td><td>循序渐进运动，午间小憩</td></tr>
+  <tr><td><span class="badge badge-blue">运动</span></td><td>运动/锻炼/久坐/步数</td><td>温和运动，久坐拉伸，饭后散步</td></tr>
+  <tr><td>默认</td><td>-</td><td>规律作息，清淡饮食，温和运动</td></tr>
+</table>
+
+<h3>6.6 用户认证</h3>
+<table>
+  <tr><th>项目</th><th>实现</th></tr>
+  <tr><td>存储</td><td>JSON 文件（<code>data/users.json</code>）</td></tr>
+  <tr><td>密码哈希</td><td>PBKDF2，120,000 次迭代，SHA-256，32 字节盐</td></tr>
+  <tr><td>密码比较</td><td><code>crypto.timingSafeEqual</code> 常量时间比较</td></tr>
+  <tr><td>Token</td><td><code>crypto.randomBytes(32).toString('hex')</code></td></tr>
+  <tr><td>手机号校验</td><td>正则 <code>/^1\d{10}$/</code></td></tr>
+  <tr><td>密码要求</td><td>6-64 位</td></tr>
+</table>
+</section>
+
+<!-- ==================== 7. 数据库 ==================== -->
+<section id="sec7">
+<h2>7. 数据库设计与表结构</h2>
+
+<p>后端使用 MySQL 数据库 <code>yangsheng_db</code>，表结构分为以下几组：</p>
+
+<h3>7.1 基础表</h3>
+<table>
+  <tr><th>表名</th><th>说明</th><th>关键字段</th></tr>
+  <tr><td><code>sys_user</code></td><td>用户表</td><td>id, username, password, real_name, phone, email, birthday, avatar, gender, age, status, create_time</td></tr>
+  <tr><td><code>sys_role</code></td><td>角色表</td><td>id, role_name, role_code, create_time</td></tr>
+  <tr><td><code>sys_user_role</code></td><td>用户角色关联表</td><td>id, user_id, role_id</td></tr>
+</table>
+
+<p>预置角色：<code>ADMIN</code>（管理员）、<code>ADVISER</code>（养生顾问/医生）、<code>USER</code>（普通用户）</p>
+
+<h3>7.2 业务表</h3>
+<table>
+  <tr><th>表名</th><th>说明</th></tr>
+  <tr><td><code>health_question</code></td><td>健康问答（user_id, question, answer, status, create_time）</td></tr>
+  <tr><td><code>doctor_profile</code></td><td>医生档案（user_id, doctor_name, title, specialty, introduction）</td></tr>
+  <tr><td><code>consultation</code></td><td>问诊记录（user_id, doctor_id, title, symptom, description, status）</td></tr>
+  <tr><td><code>consultation_message</code></td><td>问诊消息（consultation_id, sender_id, sender_role, content）</td></tr>
+</table>
+
+<h3>7.3 健康详情表</h3>
+<table>
+  <tr><th>表名</th><th>说明</th></tr>
+  <tr><td><code>health_questionnaire_record</code></td><td>体质问卷记录（user_id, constitution_type, total_score, suggestion, answers_json）</td></tr>
+  <tr><td><code>health_indicator_record</code></td><td>健康指标（user_id, name, value, unit, recorded_at）</td></tr>
+  <tr><td><code>tongue_observation_record</code></td><td>舌象记录（user_id, color, coating, dryness, note, recorded_at）</td></tr>
+</table>
+
+<h3>7.4 RAG 知识库表</h3>
+<table>
+  <tr><th>表名</th><th>说明</th></tr>
+  <tr><td><code>medical_knowledge_category</code></td><td>知识分类</td></tr>
+  <tr><td><code>medical_knowledge_document</code></td><td>知识文档</td></tr>
+  <tr><td><code>medical_knowledge_chunk</code></td><td>知识片段（title, content, keywords, risk_level）</td></tr>
+  <tr><td><code>medical_risk_rule</code></td><td>风险预警规则</td></tr>
+  <tr><td><code>medical_knowledge_search_log</code></td><td>检索日志</td></tr>
+  <tr><td><code>rag_retrieval_result</code></td><td>RAG 检索结果</td></tr>
+  <tr><td><code>knowledge_source</code></td><td>知识来源治理</td></tr>
+  <tr><td><code>knowledge_review</code></td><td>知识审核记录</td></tr>
+  <tr><td><code>knowledge_version</code> / <code>knowledge_version_item</code></td><td>知识版本管理</td></tr>
+  <tr><td><code>knowledge_import_task</code> / <code>knowledge_embedding_task</code></td><td>知识导入/嵌入任务</td></tr>
+  <tr><td><code>knowledge_feedback</code> / <code>knowledge_quality_score</code></td><td>知识反馈/质量评分</td></tr>
+</table>
+
+<h3>7.5 积分商城表</h3>
+<table>
+  <tr><th>表名</th><th>说明</th></tr>
+  <tr><td><code>reward_account</code></td><td>积分账户（user_id, balance, reserved）</td></tr>
+  <tr><td><code>reward_ledger</code></td><td>积分流水</td></tr>
+  <tr><td><code>reward_chat</code></td><td>聊天积分记录（AI 问答消耗）</td></tr>
+  <tr><td><code>reward_product</code></td><td>商品</td></tr>
+  <tr><td><code>reward_order</code></td><td>订单</td></tr>
+</table>
+</section>
+
+<!-- ==================== 8. AI/RAG ==================== -->
+<section id="sec8">
+<h2>8. AI / RAG 实现机制</h2>
+
+<h3>8.1 AI 对话完整链路</h3>
+<pre><code>用户提问
+  ↓
+AssistantController.chat()
+  ↓
+AiRateLimitService.tryAcquire()      // 速率限制
+  ↓
+RewardsService.reserveChat()          // 预留积分
+  ↓
+HealthQuestionService.addHealthQuestion()  // 保存待处理问题
+  ↓
+AssistantChatService.chat()
+  ├── KnowledgeRetrievalService.retrieve()  // RAG 关键词检索
+  ├── HealthQuestionPromptBuilder.build()   // 提示词构建
+  └── HealthQuestionAiClient.generateAnswer()  // 调用 LLM
+  ↓
+HealthQuestionService.answerHealthQuestion()  // 保存答案
+  ↓
+RewardsService.completeChat()         // 扣除积分
+  ↓
+返回 AssistantChatReply              // 回复+风险+建议+计划+免责声明</code></pre>
+
+<h3>8.2 RAG 检索机制</h3>
+<p>Spring Boot 后端的 RAG 实现包含两个层次：</p>
+
+<h4>关键词检索（已实现）</h4>
+<ul>
+  <li><strong>服务</strong>：<code>KnowledgeRetrievalService</code></li>
+  <li><strong>方式</strong>：使用 <code>JdbcTemplate</code> 直接查询 MySQL</li>
+  <li><strong>分词</strong>：对 queryText 按逗号/分号/换行分割，取前 8 个词</li>
+  <li><strong>匹配</strong>：对每个词执行 <code>LIKE</code> 查询 <code>medical_knowledge_chunk</code> 表的 title、content、keywords 字段</li>
+  <li><strong>排序</strong>：按 <code>risk_level</code> 降序（EMERGENCY > HIGH > MEDIUM > LOW）</li>
+  <li><strong>数量</strong>：默认 top-k=6</li>
+</ul>
+
+<h4>向量检索（预留）</h4>
+<ul>
+  <li><strong>接口</strong>：<code>MilvusVectorClient</code></li>
+  <li><strong>当前实现</strong>：<code>NoopMilvusVectorClient</code>（返回空列表）</li>
+  <li><strong>配置</strong>：Embedding 模型 bge-m3，Milvus 集合名 medical_knowledge</li>
+  <li><strong>用途</strong>：未来接入 Milvus 向量数据库实现语义检索</li>
+</ul>
+
+<h4>RAG 建议生成</h4>
+<p><code>RagSuggestionService</code> 合并关键词命中和向量命中结果后：</p>
+<ol>
+  <li>使用 <code>RagSuggestionPromptBuilder</code> 构建提示词</li>
+  <li>调用 <code>LocalLlmClient.generate()</code> 生成 JSON 格式建议</li>
+  <li>解析为 <code>LocalLlmSuggestionResult</code>（summary、suggestions、plans、riskLevel、scenario、disclaimer）</li>
+  <li>通过 <code>RagRetrievalLogService</code> 记录检索结果</li>
+</ol>
+
+<h3>8.3 AI 客户端</h3>
+<p><code>OpenAiCompatibleHealthQuestionAiClient</code> 使用 Java <code>HttpClient</code> 发送 POST 请求：</p>
+<ul>
+  <li>端点：<code>/chat/completions</code></li>
+  <li>格式：<code>application/json</code></li>
+  <li>参数：model、messages、temperature、max_tokens</li>
+  <li>支持 DeepSeek API 和任何 OpenAI 兼容 API</li>
+</ul>
+
+<h3>8.4 提示词构建</h3>
+<p>AI 对话的 system message 包含：</p>
+<ol>
+  <li>角色定位（中医养生助手）</li>
+  <li>用户体质倾向</li>
+  <li>健康档案摘要（舌象/健康指标/提醒设置）</li>
+  <li>RAG 检索到的相关知识片段</li>
+  <li>当前天气信息</li>
+  <li>最近对话历史（最多 <code>memoryWindow × 2</code> 条，每条截取 4000 字符）</li>
+  <li>JSON 格式输出要求</li>
+</ol>
+</section>
+
+<!-- ==================== 9. 认证与权限 ==================== -->
+<section id="sec9">
+<h2>9. 认证与权限系统</h2>
+
+<h3>9.1 Token 认证</h3>
+<p>Spring Boot 后端采用自定义 Token 认证（非 JWT 标准，但格式类似）：</p>
+
+<table>
+  <tr><th>项目</th><th>实现</th></tr>
+  <tr><td>Token 格式</td><td><code>base64Url(userId:expiresAt).HMAC_SHA256_signature</code></td></tr>
+  <tr><td>Token 存储</td><td>无后端存储，纯自签名验证</td></tr>
+  <tr><td>有效期</td><td>默认 7 天（604800 秒）</td></tr>
+  <tr><td>密钥</td><td>通过 <code>app.auth.token-secret</code> 配置</td></tr>
+  <tr><td>请求头</td><td><code>Authorization: Bearer {token}</code></td></tr>
+</table>
+
+<h3>9.2 拦截器配置</h3>
+<p><code>AuthInterceptor</code> 拦截以下路径：</p>
+<table>
+  <tr><th>类型</th><th>路径</th></tr>
+  <tr><td><span class="badge badge-red">拦截</span></td><td><code>/api/**</code>（除 auth/weather/health）、<code>/user/**</code>、<code>/role/**</code>、<code>/user-role/**</code>、<code>/health-archive/**</code>、<code>/health-question/**</code>、<code>/doctor-profile/**</code>、<code>/consultation/**</code>、<code>/consultation-message/**</code></td></tr>
+  <tr><td><span class="badge badge-green">放行</span></td><td><code>/api/auth/**</code>、<code>/api/weather/**</code>、<code>/health</code>、<code>/api/health</code></td></tr>
+</table>
+
+<h3>9.3 权限校验（PermissionService）</h3>
+<table>
+  <tr><th>方法</th><th>权限规则</th></tr>
+  <tr><td><code>isAdmin(request)</code></td><td>仅管理员</td></tr>
+  <tr><td><code>canAccessUser(request, userId)</code></td><td>管理员或本人</td></tr>
+  <tr><td><code>canManageDoctorProfile(request, userId)</code></td><td>管理员或本人（医生/顾问）</td></tr>
+  <tr><td><code>canAnswerHealthQuestion(request)</code></td><td>仅管理员</td></tr>
+  <tr><td><code>canListHealthQuestions(request, userId)</code></td><td>管理员或本人</td></tr>
+  <tr><td><code>canAccessConsultationFilter(request, userId, doctorId)</code></td><td>管理员可查看所有，医生可查自己的，用户可查自己的</td></tr>
+  <tr><td><code>canAccessConsultation(request, consultation)</code></td><td>管理员、问诊用户或医生</td></tr>
+</table>
+
+<h3>9.4 验证码服务</h3>
+<ul>
+  <li>6 位数字随机验证码</li>
+  <li>有效期：5 分钟</li>
+  <li>用途：<code>LOGIN</code>、<code>REGISTER</code>、<code>RESET_PASSWORD</code></li>
+  <li>存储：内存 <code>ConcurrentHashMap</code></li>
+</ul>
+
+<h3>9.5 前端会话管理</h3>
+<p>HarmonyOS 前端通过 <code>AuthService</code> 管理会话：</p>
+<ul>
+  <li>登录/注册成功后保存 <code>AuthSession</code> 到 <code>preferences</code>（storeName: <code>wellness_auth</code>）</li>
+  <li>运行时维护 <code>runtimeAuthToken</code> 变量</li>
+  <li>后续请求通过 <code>buildAuthorizedJsonHeaders()</code> 自动添加 <code>Authorization</code> 头</li>
+  <li>遇到 401 时触发 <code>SessionInvalidationService</code> 全局回调，清除登录状态返回登录页</li>
+</ul>
+</section>
+
+<!-- ==================== 10. 角色系统 ==================== -->
+<section id="sec10">
+<h2>10. 角色系统与多端界面</h2>
+
+<h3>10.1 角色定义</h3>
+<table>
+  <tr><th>角色</th><th>角色码</th><th>说明</th><th>Tab 列表</th></tr>
+  <tr>
+    <td><span class="badge badge-green">普通用户</span></td>
+    <td><code>USER</code></td>
+    <td>使用养生助手、健康档案、AI 问答、在线问诊</td>
+    <td>首页 | 助手 | 问诊 | 档案 | 我的</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-blue">医生</span></td>
+    <td><code>DOCTOR</code> / <code>ADVISER</code></td>
+    <td>接收和回复用户问诊，维护医生资料</td>
+    <td>工作台 | 问诊 | 助手 | 资料 | 我的</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-orange">管理员</span></td>
+    <td><code>ADMIN</code></td>
+    <td>管理用户/医生/问诊/问答日志/商品</td>
+    <td>总览 | 人员 | 问答 | 问诊 | 我的</td>
+  </tr>
+</table>
+
+<h3>10.2 角色优先级</h3>
+<p>一个用户可能拥有多个角色，<code>RoleExperienceService</code> 按优先级选取主角色：</p>
+<ol>
+  <li><code>ADMIN</code>（最高优先级）</li>
+  <li><code>DOCTOR</code></li>
+  <li><code>USER</code></li>
+</ol>
+
+<h3>10.3 角色 Tab 映射</h3>
+
+<h4>USER 角色</h4>
+<table>
+  <tr><th>Tab Key</th><th>Tab 标题</th><th>渲染组件</th></tr>
+  <tr><td><code>home</code></td><td>首页</td><td>HomeTab（天气、节气、养生计划、快捷入口、AI 建议）</td></tr>
+  <tr><td><code>assistant</code></td><td>助手</td><td>AssistantTab（AI 对话）</td></tr>
+  <tr><td><code>consultation</code></td><td>问诊</td><td>UserConsultationTab（用户问诊记录）</td></tr>
+  <tr><td><code>archive</code></td><td>档案</td><td>DataTab（健康档案、指标、舌象、问卷）</td></tr>
+  <tr><td><code>profile</code></td><td>我的</td><td>ProfileTab（个人信息、积分、设置）</td></tr>
+</table>
+
+<h4>DOCTOR 角色</h4>
+<table>
+  <tr><th>Tab Key</th><th>Tab 标题</th><th>渲染组件</th></tr>
+  <tr><td><code>doctorWorkbench</code></td><td>工作台</td><td>DoctorConsultationTab（医生工作台）</td></tr>
+  <tr><td><code>doctorConsultation</code></td><td>问诊</td><td>DoctorConsultationTab（问诊列表）</td></tr>
+  <tr><td><code>assistant</code></td><td>助手</td><td>AssistantTab（AI 对话）</td></tr>
+  <tr><td><code>doctorProfile</code></td><td>资料</td><td>DoctorProfileTab（医生资料维护）</td></tr>
+  <tr><td><code>profile</code></td><td>我的</td><td>ProfileTab</td></tr>
+</table>
+
+<h4>ADMIN 角色</h4>
+<table>
+  <tr><th>Tab Key</th><th>Tab 标题</th><th>渲染组件</th></tr>
+  <tr><td><code>adminOverview</code></td><td>总览</td><td>AdminOverviewTab（总览指标）</td></tr>
+  <tr><td><code>adminPeople</code></td><td>人员</td><td>AdminPeopleTab（用户/医生管理）</td></tr>
+  <tr><td><code>adminAssistantLogs</code></td><td>问答</td><td>AdminAssistantLogsTab（AI 问答日志）</td></tr>
+  <tr><td><code>adminConsultations</code></td><td>问诊</td><td>AdminConsultationsTab（问诊管理）</td></tr>
+  <tr><td><code>profile</code></td><td>我的</td><td>ProfileTab</td></tr>
+</table>
+</section>
+
+<!-- ==================== 11. 核心业务流程 ==================== -->
+<section id="sec11">
+<h2>11. 核心业务流程</h2>
+
+<h3>11.1 用户登录流程</h3>
+<div class="flow-step"><div class="flow-num">1</div><div class="flow-content"><h5>输入手机号和密码</h5><p>用户在 AuthView 输入手机号（11位）和密码（6-64位），或选择验证码登录</p></div></div>
+<div class="flow-step"><div class="flow-num">2</div><div class="flow-content"><h5>前端校验</h5><p><code>AuthService.isValidPhone()</code> 和 <code>isValidPassword()</code> 校验格式</p></div></div>
+<div class="flow-step"><div class="flow-num">3</div><div class="flow-content"><h5>发送请求</h5><p>POST <code>/api/auth/login</code>，请求体包含 phone 和 password</p></div></div>
+<div class="flow-step"><div class="flow-num">4</div><div class="flow-content"><h5>后端验证</h5><p>Spring Boot <code>AuthController.login()</code> → <code>UserService</code> 查询用户 → BCrypt 密码比对 → 生成 Token</p></div></div>
+<div class="flow-step"><div class="flow-num">5</div><div class="flow-content"><h5>返回会话</h5><p>返回 <code>{token, user: {id, phone, roles, primaryRole}}</code></p></div></div>
+<div class="flow-step"><div class="flow-num">6</div><div class="flow-content"><h5>前端保存</h5><p><code>AuthService</code> 保存 session 到 preferences，设置 runtimeAuthToken</p></div></div>
+<div class="flow-step"><div class="flow-num">7</div><div class="flow-content"><h5>角色路由</h5><p><code>RoleExperienceService</code> 解析主角色，生成对应 Tab 列表，进入主界面</p></div></div>
+
+<h3>11.2 AI 对话流程</h3>
+<div class="flow-step"><div class="flow-num">1</div><div class="flow-content"><h5>用户输入问题</h5><p>在 AssistantTab 输入养生问题，前端构建请求体（message, requestId, profile, weather, history）</p></div></div>
+<div class="flow-step"><div class="flow-num">2</div><div class="flow-content"><h5>发送请求</h5><p>POST <code>/api/ai/chat</code>，携带 Authorization 头</p></div></div>
+<div class="flow-step"><div class="flow-num">3</div><div class="flow-content"><h5>后端处理</h5><p>拦截器验证 Token → <code>AiRateLimitService</code> 限流 → <code>RewardsService.reserveChat()</code> 预留积分</p></div></div>
+<div class="flow-step"><div class="flow-num">4</div><div class="flow-content"><h5>RAG 检索</h5><p><code>KnowledgeRetrievalService.retrieve()</code> 从 MySQL 关键词检索相关知识片段</p></div></div>
+<div class="flow-step"><div class="flow-num">5</div><div class="flow-content"><h5>提示词构建</h5><p><code>HealthQuestionPromptBuilder</code> 组合体质、档案、天气、RAG 知识、历史对话为 system message</p></div></div>
+<div class="flow-step"><div class="flow-num">6</div><div class="flow-content"><h5>调用 LLM</h5><p><code>OpenAiCompatibleHealthQuestionAiClient</code> 调用 DeepSeek API 生成回复</p></div></div>
+<div class="flow-step"><div class="flow-num">7</div><div class="flow-content"><h5>保存与扣费</h5><p>保存问答记录 → <code>RewardsService.completeChat()</code> 扣除积分 → 返回回复</p></div></div>
+<div class="flow-step"><div class="flow-num">8</div><div class="flow-content"><h5>前端展示</h5><p>解析回复（回答 + 建议 + 计划 + 风险等级 + 免责声明）并渲染到聊天界面</p></div></div>
+
+<h3>11.3 体质问卷流程</h3>
+<div class="flow-step"><div class="flow-num">1</div><div class="flow-content"><h5>入口</h5><p>首页快捷入口"体质问卷" → <code>QuickActionView</code> 渲染 <code>QuestionnaireFlow</code></p></div></div>
+<div class="flow-step"><div class="flow-num">2</div><div class="flow-content"><h5>答题</h5><p>用户依次回答问卷题目，每题有选项和分值</p></div></div>
+<div class="flow-step"><div class="flow-num">3</div><div class="flow-content"><h5>评分</h5><p><code>QuestionnaireService</code> 计算总分，判定体质类型（平和质/气虚质/阳虚质等）</p></div></div>
+<div class="flow-step"><div class="flow-num">4</div><div class="flow-content"><h5>保存</h5><p><code>ProfileRepository.saveQuestionnaireRecord()</code> → 本地 preferences + POST <code>/api/health-detail/questionnaire</code></p></div></div>
+<div class="flow-step"><div class="flow-num">5</div><div class="flow-content"><h5>应用</h5><p>体质结果用于后续 AI 对话的上下文，影响建议方向</p></div></div>
+
+<h3>11.4 在线问诊流程</h3>
+<div class="flow-step"><div class="flow-num">1</div><div class="flow-content"><h5>用户发起问诊</h5><p>POST <code>/api/consultation</code>，填写标题、症状、描述</p></div></div>
+<div class="flow-step"><div class="flow-num">2</div><div class="flow-content"><h5>医生查看</h5><p>医生在"问诊"Tab 查看待处理问诊列表，点击进入详情</p></div></div>
+<div class="flow-step"><div class="flow-num">3</div><div class="flow-content"><h5>消息交互</h5><p>POST <code>/api/consultation-message</code> 发送消息，GET <code>/api/consultation-message/list</code> 获取消息列表</p></div></div>
+<div class="flow-step"><div class="flow-num">4</div><div class="flow-content"><h5>查看档案</h5><p>医生可查看用户的健康档案（体质、指标、舌象），辅助诊断</p></div></div>
+<div class="flow-step"><div class="flow-num">5</div><div class="flow-content"><h5>结束问诊</h5><p>PUT <code>/api/consultation/status</code> 更新问诊状态为已完成</p></div></div>
+
+<h3>11.5 天气养生联动</h3>
+<div class="flow-step"><div class="flow-num">1</div><div class="flow-content"><h5>获取定位</h5><p><code>WeatherService.requestLocationPermission()</code> → <code>requestCurrentCoordinate()</code></p></div></div>
+<div class="flow-step"><div class="flow-num">2</div><div class="flow-content"><h5>请求天气</h5><p>GET <code>/api/weather/current?latitude=...&longitude=...</code>，支持多候选地址重试</p></div></div>
+<div class="flow-step"><div class="flow-num">3</div><div class="flow-content"><h5>后端代理</h5><p>Spring Boot <code>WeatherController</code> → <code>OpenMeteoWeatherProviderClient</code> → Open-Meteo API</p></div></div>
+<div class="flow-step"><div class="flow-num">4</div><div class="flow-content"><h5>养生关联</h5><p>湿度 ≥ 75% → 湿热提醒；湿度 ≤ 35% → 干燥提醒；生成天气养生建议</p></div></div>
+<div class="flow-step"><div class="flow-num">5</div><div class="flow-content"><h5>前端展示</h5><p>首页展示天气卡片，同时天气数据作为 AI 对话和建议请求的上下文</p></div></div>
+</section>
+
+<!-- ==================== 12. API 接口清单 ==================== -->
+<section id="sec12">
+<h2>12. API 接口完整清单</h2>
+
+<h3>12.1 认证接口（/api/auth）</h3>
+<table>
+  <tr><th>方法</th><th>路径</th><th>说明</th></tr>
+  <tr><td>POST</td><td><code>/api/auth/register</code></td><td>手机号+密码注册</td></tr>
+  <tr><td>POST</td><td><code>/api/auth/login</code></td><td>手机号+密码登录</td></tr>
+  <tr><td>POST</td><td><code>/api/auth/sms-code</code></td><td>发送验证码</td></tr>
+  <tr><td>POST</td><td><code>/api/auth/sms-login</code></td><td>验证码登录</td></tr>
+  <tr><td>POST</td><td><code>/api/auth/password-reset/identify</code></td><td>验证重置密码账号</td></tr>
+  <tr><td>POST</td><td><code>/api/auth/password-reset</code></td><td>重置密码</td></tr>
+  <tr><td>GET</td><td><code>/api/auth/me</code></td><td>获取当前用户信息</td></tr>
+</table>
+
+<h3>12.2 AI 接口（/api/ai）</h3>
+<table>
+  <tr><th>方法</th><th>路径</th><th>说明</th></tr>
+  <tr><td>POST</td><td><code>/api/ai/chat</code></td><td>AI 对话（带 requestId 积分扣费）</td></tr>
+  <tr><td>POST</td><td><code>/api/ai/suggestions</code></td><td>AI 场景建议（RAG）</td></tr>
+  <tr><td>GET</td><td><code>/api/ai/status</code></td><td>AI 服务状态</td></tr>
+  <tr><td>GET</td><td><code>/api/ai/chat/{requestId}</code></td><td>查询 AI 对话结果</td></tr>
+</table>
+
+<h3>12.3 健康档案接口</h3>
+<table>
+  <tr><th>方法</th><th>路径</th><th>说明</th></tr>
+  <tr><td>GET</td><td><code>/api/health-archive/current</code></td><td>当前用户健康档案</td></tr>
+  <tr><td>PUT</td><td><code>/api/health-archive/current</code></td><td>更新/创建档案</td></tr>
+  <tr><td>GET</td><td><code>/api/health-detail/current</code></td><td>当前用户健康详情汇总</td></tr>
+  <tr><td>POST</td><td><code>/api/health-detail/questionnaire</code></td><td>添加体质问卷</td></tr>
+  <tr><td>POST</td><td><code>/api/health-detail/indicator</code></td><td>添加健康指标</td></tr>
+  <tr><td>POST</td><td><code>/api/health-detail/tongue</code></td><td>添加舌象观察</td></tr>
+  <tr><td>DELETE</td><td><code>/api/health-detail/indicator</code></td><td>删除健康指标</td></tr>
+  <tr><td>DELETE</td><td><code>/api/health-detail/tongue</code></td><td>删除舌象记录</td></tr>
+</table>
+
+<h3>12.4 问诊接口</h3>
+<table>
+  <tr><th>方法</th><th>路径</th><th>说明</th></tr>
+  <tr><td>POST</td><td><code>/api/consultation</code></td><td>创建问诊</td></tr>
+  <tr><td>GET</td><td><code>/api/consultation/list</code></td><td>问诊列表</td></tr>
+  <tr><td>GET</td><td><code>/api/consultation/detail</code></td><td>问诊详情</td></tr>
+  <tr><td>PUT</td><td><code>/api/consultation/status</code></td><td>更新问诊状态</td></tr>
+  <tr><td>POST</td><td><code>/api/consultation-message</code></td><td>发送问诊消息</td></tr>
+  <tr><td>GET</td><td><code>/api/consultation-message/list</code></td><td>问诊消息列表</td></tr>
+</table>
+
+<h3>12.5 用户与医生管理接口</h3>
+<table>
+  <tr><th>方法</th><th>路径</th><th>说明</th></tr>
+  <tr><td>GET</td><td><code>/api/user/profile</code></td><td>用户档案</td></tr>
+  <tr><td>GET</td><td><code>/api/user/list</code></td><td>用户列表（管理员）</td></tr>
+  <tr><td>POST</td><td><code>/api/user</code></td><td>创建用户（管理员）</td></tr>
+  <tr><td>PUT</td><td><code>/api/user/profile</code></td><td>更新用户档案</td></tr>
+  <tr><td>DELETE</td><td><code>/api/user</code></td><td>删除用户（管理员）</td></tr>
+  <tr><td>GET</td><td><code>/api/doctor-profile</code></td><td>医生档案</td></tr>
+  <tr><td>GET</td><td><code>/api/doctor-profile/list</code></td><td>医生列表</td></tr>
+  <tr><td>POST</td><td><code>/api/doctor-profile</code></td><td>保存医生档案</td></tr>
+</table>
+
+<h3>12.6 天气接口</h3>
+<table>
+  <tr><th>方法</th><th>路径</th><th>说明</th></tr>
+  <tr><td>GET</td><td><code>/api/weather/current</code></td><td>当前天气（支持经纬度或城市参数）</td></tr>
+</table>
+
+<h3>12.7 积分商城接口（/api/rewards）</h3>
+<table>
+  <tr><th>方法</th><th>路径</th><th>说明</th></tr>
+  <tr><td>GET</td><td><code>/api/rewards/account</code></td><td>积分账户信息</td></tr>
+  <tr><td>POST</td><td><code>/api/rewards/check-in</code></td><td>每日签到</td></tr>
+  <tr><td>GET</td><td><code>/api/rewards/ledger</code></td><td>积分流水</td></tr>
+  <tr><td>GET</td><td><code>/api/rewards/products</code></td><td>商品列表</td></tr>
+  <tr><td>POST</td><td><code>/api/rewards/orders</code></td><td>创建积分订单</td></tr>
+  <tr><td>GET</td><td><code>/api/rewards/orders</code></td><td>订单列表</td></tr>
+  <tr><td>GET</td><td><code>/api/rewards/admin/products</code></td><td>管理员商品列表</td></tr>
+  <tr><td>POST</td><td><code>/api/rewards/admin/products</code></td><td>创建商品（管理员）</td></tr>
+  <tr><td>PUT</td><td><code>/api/rewards/admin/products/{id}</code></td><td>更新商品（管理员）</td></tr>
+  <tr><td>POST</td><td><code>/api/rewards/admin/orders/{id}/fulfill</code></td><td>发货（管理员）</td></tr>
+</table>
+
+<h3>12.8 健康检查</h3>
+<table>
+  <tr><th>方法</th><th>路径</th><th>说明</th></tr>
+  <tr><td>GET</td><td><code>/api/health</code></td><td>Spring Boot 健康检查</td></tr>
+  <tr><td>GET</td><td><code>/api/health</code>（8787）</td><td>Node.js 健康检查</td></tr>
+</table>
+</section>
+
+<!-- ==================== 13. 部署指南 ==================== -->
+<section id="sec13">
+<h2>13. 项目部署与启动指南</h2>
+
+<h3>13.1 环境要求</h3>
+<table>
+  <tr><th>组件</th><th>版本要求</th></tr>
+  <tr><td>DevEco Studio</td><td>支持 HarmonyOS 6.0.2(22)</td></tr>
+  <tr><td>JDK</td><td>17+</td></tr>
+  <tr><td>MySQL</td><td>8.0+</td></tr>
+  <tr><td>Node.js</td><td>20+（LangGraph 要求）</td></tr>
+  <tr><td>Maven</td><td>3.8+</td></tr>
+</table>
+
+<h3>13.2 数据库准备</h3>
+<pre><code>-- 创建数据库
+CREATE DATABASE yangsheng_db DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- 创建用户（或使用 root）
+CREATE USER 'root'@'localhost' IDENTIFIED BY '123456';
+GRANT ALL PRIVILEGES ON yangsheng_db.* TO 'root'@'localhost';</code></pre>
+
+<h3>13.3 Spring Boot 后端启动</h3>
+<pre><code># 1. 进入项目目录
+cd D:\SpringBoot\SpringBootDemo
+
+# 2. 编译打包
+mvn clean package -DskipTests
+
+# 3. 运行（开发模式）
+mvn spring-boot:run
+
+# 或直接运行 jar
+java -jar target/SpringBootDemo.jar
+
+# 后端启动在 http://localhost:8181
+# 首次启动自动创建所有表和初始化数据</code></pre>
+
+<div class="callout warning">
+  <div class="callout-title">AI 配置（可选）</div>
+  在 <code>application.yml</code> 中配置 <code>app.health-ai.api-key</code> 为你的 DeepSeek API Key，否则 AI 功能将使用默认配置或不可用。也可通过环境变量 <code>DEEPSEEK_API_KEY</code> 设置。
+</div>
+
+<h3>13.4 Node.js AI 后端启动</h3>
+<pre><code># 1. 进入项目目录
+cd d:\yangshengzhushou\yangshengzhushou_db
+
+# 2. 安装依赖
+npm install
+
+# 3. 配置环境变量（可选）
+cp .env.example .env
+# 编辑 .env，填入 DEEPSEEK_API_KEY
+
+# 4. 启动服务
+npm start
+
+# Node.js 后端启动在 http://127.0.0.1:8787</code></pre>
+
+<div class="callout">
+  <div class="callout-title">LLM 降级策略</div>
+  无 <code>DEEPSEEK_API_KEY</code> 时，<code>/api/ai/chat</code> 仍会执行 LangGraph 工作流，但 LLM 节点走规则引擎兜底，确保服务始终可用。
+</div>
+
+<h3>13.5 HarmonyOS App 编译</h3>
+<pre><code># 1. 用 DevEco Studio 打开项目 d:\yangshengzhushou
+# 2. 等待 hvigor 同步完成
+# 3. 连接 HarmonyOS 手机或启动模拟器
+# 4. 点击 Run → 编译并安装到设备
+
+# 注意：修改 ApiConfig.ets 中的 DEFAULT_API_BASE_URL
+# 改为你的电脑局域网 IP，如 http://172.20.10.3:8181</code></pre>
+
+<h3>13.6 启动顺序</h3>
+<ol>
+  <li>启动 MySQL 数据库</li>
+  <li>启动 Spring Boot 后端（8181 端口）</li>
+  <li>（可选）启动 Node.js AI 后端（8787 端口）</li>
+  <li>在 DevEco Studio 中编译并运行 HarmonyOS App</li>
+  <li>在 App 登录页面底部"服务器连接设置"中配置后端地址</li>
+</ol>
+</section>
+
+<!-- ==================== 14. 默认账号 ==================== -->
+<section id="sec14">
+<h2>14. 默认账号与测试数据</h2>
+
+<p>Spring Boot 后端 <code>DataInitializer</code> 在首次启动时自动创建以下默认账号：</p>
+
+<table>
+  <tr><th>手机号</th><th>用户名</th><th>姓名</th><th>密码</th><th>角色</th></tr>
+  <tr><td>13800000001</td><td>admin</td><td>系统管理员</td><td>123456</td><td><span class="badge badge-orange">ADMIN</span></td></tr>
+  <tr><td>13800000002</td><td>adviser</td><td>养生顾问</td><td>123456</td><td><span class="badge badge-blue">ADVISER</span></td></tr>
+  <tr><td>13800000003</td><td>visitor</td><td>体验用户</td><td>123456</td><td><span class="badge badge-green">USER</span></td></tr>
+</table>
+
+<div class="callout">
+  <div class="callout-title">测试建议</div>
+  <ul>
+    <li>用 <code>13800000003</code> / <code>123456</code> 登录体验用户视角（首页/助手/问诊/档案）</li>
+    <li>用 <code>13800000002</code> / <code>123456</code> 登录体验医生视角（工作台/问诊/资料）</li>
+    <li>用 <code>13800000001</code> / <code>123456</code> 登录体验管理员视角（总览/人员/问答/问诊）</li>
+  </ul>
+</div>
+
+<h3>14.1 Node.js 后端测试账号</h3>
+<p>Node.js 后端使用独立的 JSON 文件存储用户，可通过 <code>POST /api/auth/register</code> 注册新用户。密码使用 PBKDF2 哈希存储。</p>
+</section>
+
+<!-- Footer -->
+<div class="footer">
+  <p>养生助手 App 完整实现说明文档</p>
+  <p>HarmonyOS ArkTS + Spring Boot 3.3.6 + Node.js LangGraph | 2026-09</p>
+</div>
+
+</div>
+</body>
+</html>

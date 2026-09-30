@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>养生助手App - 使用说明</title>
+<style>
+  :root {
+    --brand: #4CAF7A;
+    --brand-dark: #2E8B57;
+    --deep: #1A2B23;
+    --muted: #6B7F76;
+    --card: #F8FBF9;
+    --border: #D5E5DC;
+    --accent: #E8B86C;
+    --info: #5B8DBE;
+    --bg: #F0F4F1;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--deep); line-height: 1.8; font-size: 15px; }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 0 20px 60px; }
+  .cover { text-align: center; padding: 48px 20px 40px; background: linear-gradient(135deg, var(--brand), var(--brand-dark)); color: #fff; border-radius: 0 0 20px 20px; margin-bottom: 32px; }
+  .cover h1 { font-size: 32px; font-weight: 700; }
+  .cover .sub { font-size: 16px; opacity: .9; margin-top: 6px; }
+  .cover .tags { margin-top: 18px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .cover .tags span { background: rgba(255,255,255,.15); padding: 3px 12px; border-radius: 16px; font-size: 13px; }
+  section { margin-bottom: 40px; }
+  h2 { font-size: 23px; color: var(--brand-dark); border-left: 5px solid var(--brand); padding-left: 14px; margin-bottom: 16px; }
+  h3 { font-size: 18px; margin: 20px 0 10px; color: var(--deep); }
+  p { margin-bottom: 10px; }
+  ul, ol { padding-left: 22px; margin-bottom: 12px; }
+  li { margin: 4px 0; }
+  code { background: rgba(76,175,122,.12); color: var(--brand-dark); padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 14px; }
+  th { background: var(--brand); color: #fff; padding: 8px 12px; text-align: left; font-size: 13px; }
+  td { border: 1px solid var(--border); padding: 8px 12px; }
+  tbody tr:nth-child(even) { background: var(--card); }
+  .tip { border-left: 4px solid var(--info); background: rgba(91,141,190,.07); padding: 12px 16px; border-radius: 0 8px 8px 0; margin-bottom: 14px; }
+  .tip.warn { border-color: var(--accent); background: rgba(232,184,108,.07); }
+  .tip-title { font-weight: 600; margin-bottom: 2px; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+  .b-green { background: rgba(76,175,122,.15); color: var(--brand-dark); }
+  .b-blue { background: rgba(91,141,190,.15); color: var(--info); }
+  .b-orange { background: rgba(232,184,108,.15); color: #B8881C; }
+  .step { display: flex; gap: 12px; margin-bottom: 10px; align-items: flex-start; }
+  .step-n { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
+  .step-c { flex: 1; }
+  .step-c h5 { font-size: 15px; margin-bottom: 0; }
+  .step-c p { font-size: 14px; color: var(--muted); margin: 0; }
+  .tab-demo { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 14px; }
+  .tab-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .tab-item { padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; border: 2px solid var(--border); }
+  .tab-item.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+  .footer { text-align: center; padding: 24px 0; color: var(--muted); font-size: 13px; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>养生助手 App</h1>
+  <div class="sub">使用说明文档</div>
+  <div class="tags">
+    <span>HarmonyOS</span>
+    <span>v1.0</span>
+    <span>用户/医生/管理员 三端</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- 1. App简介 -->
+<section>
+<h2>一、App简介</h2>
+<p>养生助手是一款基于 HarmonyOS 的智能健康管理应用，围绕<strong>中医养生</strong>理念，结合天气环境、个人体质和健康档案，通过 AI 提供个性化的养生建议。</p>
+<p>核心能力包括：AI 养生问答、中医体质问卷、舌象记录、健康指标管理、天气养生联动、在线问诊、积分商城等。</p>
+<p>App 支持三种角色：<span class="badge b-green">普通用户</span> <span class="badge b-blue">医生</span> <span class="badge b-orange">管理员</span>，每种角色有不同的功能界面。</p>
+</section>
+
+<!-- 2. 安装与启动 -->
+<section>
+<h2>二、安装与启动</h2>
+<h3>2.1 前置条件</h3>
+<ul>
+  <li>HarmonyOS 手机（建议系统版本 6.0 以上）</li>
+  <li>后端服务已启动（默认端口 8181）</li>
+  <li>手机和后端电脑在同一局域网（WiFi）下</li>
+</ul>
+
+<h3>2.2 安装 App</h3>
+<ol>
+  <li>在 DevEco Studio 中打开项目，连接手机</li>
+  <li>点击 Run 编译安装</li>
+  <li>安装完成后手机桌面出现"养生助手"图标</li>
+</ol>
+
+<h3>2.3 配置后端地址</h3>
+<p>首次使用需要配置后端服务地址，确保 App 能连接到后端。</p>
+<div class="step"><div class="step-n">1</div><div class="step-c"><h5>打开 App</h5><p>进入登录页面</p></div></div>
+<div class="step"><div class="step-n">2</div><div class="step-c"><h5>找到"服务器连接设置"</h5><p>在登录页面<strong>最底部</strong>，灰色小字按钮</p></div></div>
+<div class="step"><div class="step-n">3</div><div class="step-c"><h5>输入后端地址</h5><p>格式：<code>http://电脑IP:8181</code>，例如 <code>http://172.20.10.3:8181</code></p></div></div>
+<div class="step"><div class="step-n">4</div><div class="step-c"><h5>点击"保存并测试连接"</h5><p>显示"服务器连接成功"即可</p></div></div>
+
+<div class="tip warn">
+  <div class="tip-title">如何查看电脑 IP</div>
+  电脑打开 PowerShell，输入 <code>ipconfig</code>，找到"IPv4 地址"对应的值。手机和电脑必须连接同一个 WiFi。
+</div>
+</section>
+
+<!-- 3. 注册与登录 -->
+<section>
+<h2>三、注册与登录</h2>
+<h3>3.1 默认测试账号</h3>
+<p>后端启动后自动创建以下账号，可直接登录使用：</p>
+<table>
+  <tr><th>手机号</th><th>密码</th><th>身份</th></tr>
+  <tr><td>13800000001</td><td>123456</td><td><span class="badge b-orange">管理员</span></td></tr>
+  <tr><td>13800000002</td><td>123456</td><td><span class="badge b-blue">医生</span></td></tr>
+  <tr><td>13800000003</td><td>123456</td><td><span class="badge b-green">普通用户</span></td></tr>
+</table>
+
+<h3>3.2 密码登录</h3>
+<ol>
+  <li>输入 11 位手机号</li>
+  <li>输入密码（至少 6 位）</li>
+  <li>点击"登录"按钮</li>
+</ol>
+
+<h3>3.3 验证码登录</h3>
+<ol>
+  <li>点击顶部"验证码登录"切换模式</li>
+  <li>输入手机号</li>
+  <li>点击"获取验证码"，收到 6 位验证码</li>
+  <li>输入验证码，点击"登录"</li>
+</ol>
+<div class="tip">
+  <div class="tip-title">开发环境验证码</div>
+  开发模式下，验证码会直接显示在页面上（如"验证码已发送，开发验证码：123456"），无需真实短信。
+</div>
+
+<h3>3.4 注册新账号</h3>
+<ol>
+  <li>点击底部"没有账号，去注册"</li>
+  <li>输入手机号、密码（至少 6 位）、确认密码</li>
+  <li>选择身份：<strong>普通用户</strong> 或 <strong>医生入驻</strong></li>
+  <li>点击"获取验证码"获取验证码</li>
+  <li>输入验证码，点击"注册并进入"</li>
+</ol>
+
+<h3>3.5 忘记密码</h3>
+<ol>
+  <li>点击底部"忘记密码"</li>
+  <li>输入手机号或账号，点击"下一步验证身份"</li>
+  <li>获取短信验证码并输入</li>
+  <li>输入新密码（至少 6 位）并确认</li>
+  <li>点击"修改密码"，用新密码登录</li>
+</ol>
+</section>
+
+<!-- 4. 首次引导 -->
+<section>
+<h2>四、首次引导页</h2>
+<p>首次登录后会显示引导页，介绍 App 的核心功能。可以点击"下一步"逐步查看，或点击"跳过"直接进入主界面。引导页仅在首次登录后显示。</p>
+</section>
+
+<!-- 5. 普通用户使用 -->
+<section>
+<h2>五、普通用户使用指南</h2>
+<p>普通用户登录后，底部有 5 个 Tab：</p>
+<div class="tab-demo">
+  <div class="tab-row">
+    <div class="tab-item active">首页</div>
+    <div class="tab-item">助手</div>
+    <div class="tab-item">问诊</div>
+    <div class="tab-item">档案</div>
+    <div class="tab-item">我的</div>
+  </div>
+</div>
+
+<h3>5.1 首页</h3>
+<p>首页是核心信息聚合页，展示以下内容：</p>
+<ul>
+  <li><strong>天气养生卡片</strong>：显示当前城市、温度、湿度、天气状况和养生建议（如"湿热提醒：健脾祛湿"）</li>
+  <li><strong>节气信息</strong>：当前节气名称、饮食建议和起居建议</li>
+  <li><strong>养生计划</strong>：根据天气和体质生成的三时段计划（上午/下午/晚上）</li>
+  <li><strong>AI 建议</strong>：结合天气和体质的智能养生建议</li>
+  <li><strong>快捷入口</strong>：底部有"体质问卷"和"舌象记录"两个快捷按钮</li>
+</ul>
+
+<h4>使用体质问卷</h4>
+<ol>
+  <li>点击首页底部的"体质问卷"快捷按钮</li>
+  <li>依次回答问卷题目（每题有多个选项，不同选项对应不同分值）</li>
+  <li>提交后系统计算总分，判定你的体质类型（如平和质、气虚质、阳虚质等）</li>
+  <li>体质结果会自动保存，并影响后续 AI 建议的方向</li>
+</ol>
+<div class="tip">
+  <div class="tip-title">为什么要做体质问卷？</div>
+  AI 助手会根据你的体质类型提供针对性的养生建议。建议首次使用时先完成问卷。
+</div>
+
+<h4>记录舌象</h4>
+<ol>
+  <li>点击首页底部的"舌象记录"快捷按钮</li>
+  <li>填写舌质颜色（淡红/红/绛等）、舌苔（薄白/厚腻等）、干燥程度、备注</li>
+  <li>点击保存，舌象记录会纳入健康档案</li>
+</ol>
+
+<h3>5.2 AI 助手</h3>
+<p>AI 助手是一个智能养生问答对话界面，可以像聊天一样向 AI 提问。</p>
+<h4>使用方法</h4>
+<ol>
+  <li>点击底部"助手"Tab</li>
+  <li>在底部输入框输入你的养生问题（如"最近总是失眠怎么办？"）</li>
+  <li>点击发送，等待 AI 回复（通常几秒内）</li>
+  <li>AI 回复包含：文字回答、养生建议列表、三时段计划、风险等级</li>
+</ol>
+
+<div class="tip warn">
+  <div class="tip-title">注意事项</div>
+  <ul>
+    <li>每次 AI 问答会消耗一定积分，请合理使用</li>
+    <li>AI 回复末尾包含免责声明："本建议不能替代医生诊断"</li>
+    <li>如果涉及严重症状（胸痛、呼吸困难等），系统会提示及时就医</li>
+    <li>AI 回复会结合你的体质、天气、舌象、健康指标等个性化生成</li>
+  </ul>
+</div>
+
+<h3>5.3 在线问诊</h3>
+<p>可以向医生发起一对一问诊，获取专业建议。</p>
+<h4>发起问诊</h4>
+<ol>
+  <li>点击底部"问诊"Tab</li>
+  <li>点击"发起问诊"按钮</li>
+  <li>填写问诊标题、主要症状、详细描述</li>
+  <li>提交后等待医生回复</li>
+</ol>
+<h4>查看和回复</h4>
+<ol>
+  <li>在问诊列表中点击一条问诊进入详情</li>
+  <li>可以查看医生回复，并发送新消息</li>
+  <li>医生可以查看你的健康档案，辅助了解你的身体状况</li>
+</ol>
+
+<h3>5.4 健康档案</h3>
+<p>档案页集中展示你的所有健康数据，点击底部"档案"Tab进入。</p>
+<table>
+  <tr><th>模块</th><th>功能</th></tr>
+  <tr><td>体质记录</td><td>查看历次体质问卷结果和体质倾向</td></tr>
+  <tr><td>健康指标</td><td>添加/查看血压、血糖、心率等指标记录，支持状态判断</td></tr>
+  <tr><td>舌象记录</td><td>查看历次舌象观察记录</td></tr>
+  <tr><td>提醒设置</td><td>设置健康提醒（如定时喝水、按时作息），系统通过本地通知推送</td></tr>
+  <tr><td>建议摘要</td><td>基于档案数据生成的综合养生建议</td></tr>
+</table>
+
+<h4>添加健康指标</h4>
+<ol>
+  <li>在档案页点击"添加指标"</li>
+  <li>输入指标名称（如"血压"）、数值、单位（如"mmHg"）</li>
+  <li>保存后系统会自动判断指标状态（正常/偏高/偏低）</li>
+</ol>
+
+<h4>设置健康提醒</h4>
+<ol>
+  <li>在档案页找到"提醒设置"</li>
+  <li>点击添加提醒，填写标题（如"喝水"）和时间（如"09:00"）</li>
+  <li>开启提醒开关</li>
+  <li>系统会在设定时间通过手机通知推送提醒</li>
+</ol>
+
+<h3>5.5 我的</h3>
+<p>个人中心页面，包含以下功能：</p>
+<ul>
+  <li><strong>个人信息</strong>：查看和编辑头像、昵称、性别、年龄等</li>
+  <li><strong>积分账户</strong>：查看积分余额、每日签到、积分流水</li>
+  <li><strong>积分商城</strong>：浏览商品、用积分兑换</li>
+  <li><strong>退出登录</strong>：清除登录状态返回登录页</li>
+</ul>
+
+<h4>每日签到</h4>
+<ol>
+  <li>进入"我的"页面</li>
+  <li>点击"每日签到"按钮</li>
+  <li>签到成功后获得积分奖励</li>
+</ol>
+
+<h4>积分兑换商品</h4>
+<ol>
+  <li>在"我的"页面进入积分商城</li>
+  <li>浏览可用商品列表</li>
+  <li>选择商品点击兑换（需积分充足）</li>
+  <li>兑换后在订单列表中查看状态</li>
+</ol>
+</section>
+
+<!-- 6. 医生使用 -->
+<section>
+<h2>六、医生使用指南</h2>
+<p>医生登录后，底部有 5 个 Tab：</p>
+<div class="tab-demo">
+  <div class="tab-row">
+    <div class="tab-item active">工作台</div>
+    <div class="tab-item">问诊</div>
+    <div class="tab-item">助手</div>
+    <div class="tab-item">资料</div>
+    <div class="tab-item">我的</div>
+  </div>
+</div>
+
+<h3>6.1 工作台</h3>
+<p>展示医生工作概览，包括待处理问诊数量、已回复问诊等统计数据。</p>
+
+<h3>6.2 问诊管理</h3>
+<ol>
+  <li>点击"问诊"Tab查看所有分配给你的问诊</li>
+  <li>按状态筛选（待回复/进行中/已完成）</li>
+  <li>点击进入问诊详情，查看用户症状描述</li>
+  <li>可以查看该用户的健康档案（体质、指标、舌象）</li>
+  <li>在消息框输入回复，发送消息</li>
+  <li>问诊结束后更新状态为"已完成"</li>
+</ol>
+
+<h3>6.3 AI 助手</h3>
+<p>医生同样可以使用 AI 助手查询养生知识，使用方式与普通用户相同。</p>
+
+<h3>6.4 医生资料</h3>
+<ol>
+  <li>点击"资料"Tab维护个人资料</li>
+  <li>填写姓名、职称、擅长领域、个人简介</li>
+  <li>保存后用户在问诊时可以查看你的资料</li>
+</ol>
+</section>
+
+<!-- 7. 管理员使用 -->
+<section>
+<h2>七、管理员使用指南</h2>
+<p>管理员登录后，底部有 5 个 Tab：</p>
+<div class="tab-demo">
+  <div class="tab-row">
+    <div class="tab-item active">总览</div>
+    <div class="tab-item">人员</div>
+    <div class="tab-item">问答</div>
+    <div class="tab-item">问诊</div>
+    <div class="tab-item">我的</div>
+  </div>
+</div>
+
+<h3>7.1 总览</h3>
+<p>展示系统整体运营数据：用户总数、医生数量、问诊数量、AI 问答次数等关键指标。</p>
+
+<h3>7.2 人员管理</h3>
+<table>
+  <tr><th>操作</th><th>方法</th></tr>
+  <tr><td>查看人员列表</td><td>进入"人员"Tab，查看所有用户和医生</td></tr>
+  <tr><td>新增人员</td><td>点击"新增"，填写姓名、手机号、密码、角色（用户/医生）、状态</td></tr>
+  <tr><td>编辑人员</td><td>点击列表项，修改信息后保存</td></tr>
+  <tr><td>禁用/启用</td><td>编辑人员状态为"禁用"或"正常"</td></tr>
+  <tr><td>删除人员</td><td>点击删除按钮确认</td></tr>
+</table>
+<div class="tip warn">
+  <div class="tip-title">注意</div>
+  新增人员的默认密码为 <code>123456</code>，首次登录后建议修改密码。
+</div>
+
+<h3>7.3 问答日志</h3>
+<p>查看所有用户的 AI 问答记录，包括问题内容、AI 回复、时间等，用于审计和质量监控。</p>
+
+<h3>7.4 问诊管理</h3>
+<p>查看全平台问诊记录，包括问诊状态、参与用户和医生信息。管理员可以查看所有问诊详情但不能直接回复。</p>
+
+<h3>7.5 商品管理（积分商城）</h3>
+<p>在"我的"页面可以进入管理员商品管理：</p>
+<ul>
+  <li>添加商品：设置名称、所需积分、库存、描述</li>
+  <li>编辑商品：修改商品信息</li>
+  <li>订单管理：查看用户兑换订单，进行发货操作</li>
+</ul>
+</section>
+
+<!-- 8. 常见问题 -->
+<section>
+<h2>八、常见问题</h2>
+
+<h3>Q1：提示"后端响应超时"</h3>
+<p>可能原因及解决方法：</p>
+<ul>
+  <li><strong>后端未启动</strong>：确认 Spring Boot 后端（8181端口）已启动</li>
+  <li><strong>IP地址不对</strong>：在登录页底部"服务器连接设置"中修改为正确的电脑 IP</li>
+  <li><strong>不在同一WiFi</strong>：确保手机和电脑连接同一个 WiFi 网络</li>
+  <li><strong>防火墙拦截</strong>：临时关闭电脑防火墙测试，或放行 8181 端口</li>
+</ul>
+
+<h3>Q2：AI 助手回复很慢或无回复</h3>
+<ul>
+  <li>AI 问答超时时间设为 90 秒，复杂问题可能需要等待</li>
+  <li>检查后端是否配置了 DeepSeek API Key</li>
+  <li>积分不足时无法使用 AI 问答，请先签到获取积分</li>
+  <li>后端 AI 服务不可用时会显示兜底回复</li>
+</ul>
+
+<h3>Q3：登录提示"登录已过期"</h3>
+<p>Token 有效期为 7 天，过期后需要重新登录。退出 App 重新打开也会自动校验登录状态。</p>
+
+<h3>Q4：天气信息不显示</h3>
+<ul>
+  <li>检查是否授予了定位权限（设置 → 应用 → 养生助手 → 权限）</li>
+  <li>确保手机定位服务已开启</li>
+  <li>天气服务支持多地址自动重试，如都失败会显示兜底天气数据</li>
+</ul>
+
+<h3>Q5：健康提醒不推送</h3>
+<ul>
+  <li>检查是否授予了通知权限</li>
+  <li>确保手机未开启免打扰模式</li>
+  <li>在档案页的"提醒设置"中确认提醒开关已开启</li>
+</ul>
+
+<h3>Q6：体质问卷结果不准确</h3>
+<p>体质问卷基于中医九种体质分类，结果仅供参考。建议如实回答，多次填写取最近一次结果。体质结果会随 AI 建议方向调整。</p>
+
+<h3>Q7：如何修改密码</h3>
+<p>在登录页点击"忘记密码"，通过手机号验证码重置密码。</p>
+
+<h3>Q8：医生如何查看用户健康档案</h3>
+<p>在问诊详情页，医生可以查看该用户的体质、健康指标、舌象记录等健康档案信息，辅助诊断。</p>
+</section>
+
+<!-- 9. 注意事项 -->
+<section>
+<h2>九、注意事项</h2>
+<div class="tip warn">
+  <div class="tip-title">重要提示</div>
+  <ul>
+    <li><strong>AI 建议仅供参考</strong>：AI 生成的养生建议不能替代专业医生诊断，若症状持续或加重请及时就医</li>
+    <li><strong>紧急风险提示</strong>：如果 AI 检测到紧急风险信号（如胸痛、呼吸困难），会提示及时就医，不会自行给出建议</li>
+    <li><strong>积分消耗</strong>：AI 问答会消耗积分，每日签到可获取积分</li>
+    <li><strong>数据安全</strong>：健康数据存储在本地和后端数据库，登录信息通过 Token 加密传输</li>
+    <li><strong>网络依赖</strong>：大部分功能需要网络连接，断网时仅可查看本地存储的档案数据</li>
+  </ul>
+</div>
+</section>
+
+<!-- 10. 快速上手 -->
+<section>
+<h2>十、快速上手（5分钟入门）h2>
+<div class="step"><div class="step-n">1</div><div class="step-c"><h5>启动后端</h5><p>确保 Spring Boot 后端在 8181 端口运行</p></div></div>
+<div class="step"><div class="step-n">2</div><div class="step-c"><h5>配置地址</h5><p>App 登录页底部"服务器连接设置"，输入电脑 IP</p></div></div>
+<div class="step"><div class="step-n">3</div><div class="step-c"><h5>登录</h5><p>用 13800000003 / 123456 登录体验用户</p></div></div>
+<div class="step"><div class="step-n">4</div><div class="step-c"><h5>做体质问卷</h5><p>首页快捷入口"体质问卷"，完成问卷</p></div></div>
+<div class="step"><div class="step-n">5</div><div class="step-c"><h5>问 AI</h5><p>进入"助手"Tab，输入问题体验 AI 养生问答</p></div></div>
+</section>
+
+<div class="footer">
+  <p>养生助手 App 使用说明文档</p>
+  <p>v1.0 | 2026-09</p>
+</div>
+
+</div>
+</body>
+</html>

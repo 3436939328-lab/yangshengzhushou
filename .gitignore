@@ -1,0 +1,60 @@
+# ==================== HarmonyOS / ArkTS ====================
+node_modules/
+oh_modules/
+/local.properties
+/.idea
+**/build
+/.hvigor
+.cxx
+/.clangd
+/.clang-format
+/.clang-tidy
+**/.test
+/.appanalyzer
+/.cxx
+/build-profile.json5.bak
+
+# ==================== Node.js / npm ====================
+**/node_modules/
+.npm-cache/
+**/.npm-cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ==================== Java / Maven ====================
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+!.mvn/wrapper/maven-wrapper.jar
+
+# ==================== IDE / Editor ====================
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# ==================== OS ====================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ==================== Logs ====================
+*.log
+logs/
+
+# ==================== 本地临时备份目录 ====================
+.work/backend-original/
+.work/backend-publish.json
+.trae-html-share-packages/
+.superpowers/
+
+# ==================== 敏感配置（保留示例） ====================
+# 生产环境配置如含密钥请使用 .local 后缀并在此忽略

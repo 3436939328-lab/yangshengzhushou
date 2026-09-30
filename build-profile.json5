@@ -1,0 +1,56 @@
+{
+  "app": {
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "certpath": "D:/HarmonyOS/养生助手.cer",
+          "keyAlias": "yangsheng_release",
+          "keyPassword": "00000019D285806B276553FC5688CCF88D103AD24D71F13F8A5BCE9BCB155176D48D333ADD7321C9DD",
+          "profile": "D:/HarmonyOS/ruange_release_profileRelease.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "D:/HarmonyOS/养生助手证书.p12",
+          "storePassword": "000000196D981CC3E95356E096C8C1F78DDFD14E81ED4778A84877AD320EEF4C483C232AC4893C05A2"
+        }
+      }
+    ],
+    "products": [
+      {
+        "name": "default",
+        "signingConfig": "default",
+        "targetSdkVersion": "6.0.2(22)",
+        "compatibleSdkVersion": "6.0.2(22)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        }
+      }
+    ],
+    "buildModeSet": [
+      {
+        "name": "debug",
+      },
+      {
+        "name": "release"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    }
+  ]
+}

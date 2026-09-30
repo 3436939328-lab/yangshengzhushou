@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.example.springbootdemo.dao.DoctorProfileDao">
+  <resultMap id="BaseResultMap" type="org.example.springbootdemo.bean.DoctorProfile">
+    <id column="id" property="id" jdbcType="BIGINT" />
+    <result column="user_id" property="userId" jdbcType="BIGINT" />
+    <result column="doctor_name" property="doctorName" jdbcType="VARCHAR" />
+    <result column="title" property="title" jdbcType="VARCHAR" />
+    <result column="specialty" property="specialty" jdbcType="VARCHAR" />
+    <result column="introduction" property="introduction" jdbcType="VARCHAR" />
+    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+  </resultMap>
+
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long">
+    select id, user_id, doctor_name, title, specialty, introduction, create_time
+    from doctor_profile
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+
+  <select id="selectByUserId" resultMap="BaseResultMap" parameterType="java.lang.Long">
+    select id, user_id, doctor_name, title, specialty, introduction, create_time
+    from doctor_profile
+    where user_id = #{userId,jdbcType=BIGINT}
+    limit 1
+  </select>
+
+  <select id="selectList" resultMap="BaseResultMap">
+    select id, user_id, doctor_name, title, specialty, introduction, create_time
+    from doctor_profile
+    order by id desc
+  </select>
+
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    delete from doctor_profile
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+
+  <insert id="insert" parameterType="org.example.springbootdemo.bean.DoctorProfile">
+    insert into doctor_profile (id, user_id, doctor_name, title, specialty, introduction, create_time)
+    values (
+      #{id,jdbcType=BIGINT}, #{userId,jdbcType=BIGINT}, #{doctorName,jdbcType=VARCHAR},
+      #{title,jdbcType=VARCHAR}, #{specialty,jdbcType=VARCHAR}, #{introduction,jdbcType=VARCHAR},
+      #{createTime,jdbcType=TIMESTAMP}
+    )
+  </insert>
+
+  <insert id="insertSelective" parameterType="org.example.springbootdemo.bean.DoctorProfile" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    insert into doctor_profile
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">id,</if>
+      <if test="userId != null">user_id,</if>
+      <if test="doctorName != null">doctor_name,</if>
+      <if test="title != null">title,</if>
+      <if test="specialty != null">specialty,</if>
+      <if test="introduction != null">introduction,</if>
+      <if test="createTime != null">create_time,</if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">#{id,jdbcType=BIGINT},</if>
+      <if test="userId != null">#{userId,jdbcType=BIGINT},</if>
+      <if test="doctorName != null">#{doctorName,jdbcType=VARCHAR},</if>
+      <if test="title != null">#{title,jdbcType=VARCHAR},</if>
+      <if test="specialty != null">#{specialty,jdbcType=VARCHAR},</if>
+      <if test="introduction != null">#{introduction,jdbcType=VARCHAR},</if>
+      <if test="createTime != null">#{createTime,jdbcType=TIMESTAMP},</if>
+    </trim>
+  </insert>
+
+  <update id="updateByPrimaryKeySelective" parameterType="org.example.springbootdemo.bean.DoctorProfile">
+    update doctor_profile
+    <set>
+      <if test="userId != null">user_id = #{userId,jdbcType=BIGINT},</if>
+      <if test="doctorName != null">doctor_name = #{doctorName,jdbcType=VARCHAR},</if>
+      <if test="title != null">title = #{title,jdbcType=VARCHAR},</if>
+      <if test="specialty != null">specialty = #{specialty,jdbcType=VARCHAR},</if>
+      <if test="introduction != null">introduction = #{introduction,jdbcType=VARCHAR},</if>
+      <if test="createTime != null">create_time = #{createTime,jdbcType=TIMESTAMP},</if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+
+  <update id="updateByPrimaryKey" parameterType="org.example.springbootdemo.bean.DoctorProfile">
+    update doctor_profile
+    set user_id = #{userId,jdbcType=BIGINT},
+      doctor_name = #{doctorName,jdbcType=VARCHAR},
+      title = #{title,jdbcType=VARCHAR},
+      specialty = #{specialty,jdbcType=VARCHAR},
+      introduction = #{introduction,jdbcType=VARCHAR},
+      create_time = #{createTime,jdbcType=TIMESTAMP}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+</mapper>

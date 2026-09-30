@@ -1,0 +1,20 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "茹安阁主模块"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "茹安阁"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "茹安阁"
+    },
+    {
+      "name": "location_permission_reason",
+      "value": "用于获取当前位置并展示本地化天气与养生建议"
+    }
+  ]
+}
