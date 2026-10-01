@@ -37,6 +37,16 @@ public class PermissionService {
         return isAdmin(request) || (canAccessUser(request, userId) && hasAnyRole(request, DOCTOR, ADVISER));
     }
 
+    /** 管理员审核医生资质 */
+    public boolean canReviewDoctor(HttpServletRequest request) {
+        return isAdmin(request);
+    }
+
+    /** 本人医生才能切换接诊开关（或管理员协助） */
+    public boolean canManageDoctorAvailability(HttpServletRequest request, Long userId) {
+        return canManageDoctorProfile(request, userId);
+    }
+
     public boolean canAnswerHealthQuestion(HttpServletRequest request) {
         return isAdmin(request);
     }

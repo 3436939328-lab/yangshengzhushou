@@ -1,8 +1,10 @@
 import {
   ShareCategory,
   FamilyRelationStatus,
-  FamilyMemberCard
-} from '../../components/tabs/FamilyTab';
+  FamilyMemberCard,
+  ShareGroup,
+  ShareCategoryConfigItem
+} from '../../model/FamilyModels';
 import {
   BRAND_GREEN,
   CARD_BG,
@@ -16,13 +18,7 @@ import { SectionTitle } from '../cards/CommonCards';
 /**
  * 共享类别配置
  */
-const SHARE_CATEGORY_CONFIG: {
-  category: ShareCategory;
-  label: string;
-  description: string;
-  icon: string;
-  group: 'vital' | 'lifestyle' | 'analysis' | 'notify';
-}[] = [
+const SHARE_CATEGORY_CONFIG: ShareCategoryConfigItem[] = [
   { category: ShareCategory.BLOOD_PRESSURE, label: '血压', description: '收缩压、舒张压、脉搏', icon: '🩺', group: 'vital' },
   { category: ShareCategory.BLOOD_SUGAR, label: '血糖', description: '血糖值及测量类型', icon: '🩸', group: 'vital' },
   { category: ShareCategory.HEART_RATE, label: '心率', description: '心率测量记录', icon: '❤️', group: 'vital' },
@@ -44,7 +40,7 @@ const SHARE_CATEGORY_CONFIG: {
 @Component
 export struct FamilyShareSettings {
   @Prop member: FamilyMemberCard | null = null;
-  @Prop isViewMode: boolean = true; // true=查看对方对我的授权, false=管理我对对方的授权
+  @Prop isViewMode: boolean = true;
 
   @State grantedCategories: ShareCategory[] = [];
   @State historyWindowDays: number = 7;
@@ -56,14 +52,13 @@ export struct FamilyShareSettings {
 
   aboutToAppear() {
     if (this.member) {
-      this.grantedCategories = [...this.member.grantedCategories];
+      this.grantedCategories = this.member.grantedCategories;
       this.historyWindowDays = this.member.historyWindowDays;
     }
   }
 
   build() {
     Column({ space: 16 }) {
-      // 标题
       Row() {
         if (this.onClose) {
           Text('← 返回')
@@ -89,19 +84,11 @@ export struct FamilyShareSettings {
       } else {
         Scroll() {
           Column({ space: 16 }) {
-            // 亲人信息
             this.MemberInfoCard()
-
-            // 共享类别
             this.ShareCategoriesSection()
-
-            // 历史窗口
             this.HistoryWindowSection()
-
-            // 说明
             this.NoteSection()
 
-            // 保存按钮（仅编辑模式）
             if (!this.isViewMode) {
               if (this.saveFeedback.length > 0) {
                 Text(this.saveFeedback)
@@ -138,64 +125,50 @@ export struct FamilyShareSettings {
     .padding({ left: 18, right: 18, top: 14 })
   }
 
-  // ==================== 亲人信息 ====================
-
   @Builder
   MemberInfoCard() {
-    if (!this.member) return;
+    if (this.member) {
+      Row({ space: 12 }) {
+        Circle({ width: 48, height: 48 })
+          .fill(BRAND_GREEN)
 
-    Row({ space: 12 }) {
-      // 头像
-      Circle({ width: 48, height: 48 })
-        .fill(BRAND_GREEN)
+        Column({ space: 4 }) {
+          Text(this.member.displayName)
+            .fontSize(17)
+            .fontWeight(FontWeight.Bold)
+            .fontColor(DEEP_TEXT)
+          Text(`关系：${this.member.relationLabel}`)
+            .fontSize(12)
+            .fontColor(MUTED_TEXT)
+        }
+        .alignItems(HorizontalAlign.Start)
+        .layoutWeight(1)
 
-      Column({ space: 4 }) {
-        Text(this.member.displayName)
-          .fontSize(17)
-          .fontWeight(FontWeight.Bold)
-          .fontColor(DEEP_TEXT)
-        Text(`关系：${this.member.relationLabel}`)
+        Text(this.member.status === FamilyRelationStatus.ACTIVE ? '已确认' : '待确认')
           .fontSize(12)
-          .fontColor(MUTED_TEXT)
+          .fontColor(this.member.status === FamilyRelationStatus.ACTIVE ? BRAND_GREEN : WARM_ACCENT)
+          .padding({ left: 10, right: 10, top: 5, bottom: 5 })
+          .backgroundColor(
+            this.member.status === FamilyRelationStatus.ACTIVE
+              ? 'rgba(76, 175, 80, 0.1)'
+              : 'rgba(255, 152, 0, 0.1)'
+          )
+          .borderRadius(12)
       }
-      .alignItems(HorizontalAlign.Start)
-      .layoutWeight(1)
-
-      // 关系状态
-      Text(this.member.status === FamilyRelationStatus.ACTIVE ? '已确认' : '待确认')
-        .fontSize(12)
-        .fontColor(this.member.status === FamilyRelationStatus.ACTIVE ? BRAND_GREEN : WARM_ACCENT)
-        .padding({ left: 10, right: 10, top: 5, bottom: 5 })
-        .backgroundColor(
-          this.member.status === FamilyRelationStatus.ACTIVE
-            ? 'rgba(76, 175, 80, 0.1)'
-            : 'rgba(255, 152, 0, 0.1)'
-        )
-        .borderRadius(12)
+      .width('100%')
+      .padding(16)
+      .backgroundColor(CARD_BG)
+      .borderRadius(CARD_RADIUS)
     }
-    .width('100%')
-    .padding(16)
-    .backgroundColor(CARD_BG)
-    .borderRadius(CARD_RADIUS)
   }
-
-  // ==================== 共享类别 ====================
 
   @Builder
   ShareCategoriesSection() {
     Column({ space: 12 }) {
       SectionTitle('共享数据类别')
-
-      // 生命体征
       this.CategoryGroup('生命体征', 'vital')
-
-      // 生活方式
       this.CategoryGroup('生活方式', 'lifestyle')
-
-      // 分析结果
       this.CategoryGroup('分析结果', 'analysis')
-
-      // 通知
       this.CategoryGroup('通知设置', 'notify')
     }
     .width('100%')
@@ -206,9 +179,6 @@ export struct FamilyShareSettings {
 
   @Builder
   CategoryGroup(title: string, group: string) {
-    const items = SHARE_CATEGORY_CONFIG.filter(c => c.group === group);
-    if (items.length === 0) return;
-
     Column({ space: 0 }) {
       Text(title)
         .fontSize(13)
@@ -217,9 +187,9 @@ export struct FamilyShareSettings {
         .margin({ bottom: 6 })
 
       Column({ space: 0 }) {
-        ForEach(items, (item: typeof SHARE_CATEGORY_CONFIG[0]) => {
+        ForEach(SHARE_CATEGORY_CONFIG.filter((c: ShareCategoryConfigItem) => c.group === group), (item: ShareCategoryConfigItem) => {
           this.CategoryRow(item)
-        }, (item: typeof SHARE_CATEGORY_CONFIG[0]) => item.category)
+        }, (item: ShareCategoryConfigItem) => item.category)
       }
     }
     .width('100%')
@@ -227,9 +197,7 @@ export struct FamilyShareSettings {
   }
 
   @Builder
-  CategoryRow(item: typeof SHARE_CATEGORY_CONFIG[0]) {
-    const isGranted = this.grantedCategories.includes(item.category);
-
+  CategoryRow(item: ShareCategoryConfigItem) {
     Row({ space: 12 }) {
       Text(item.icon)
         .fontSize(20)
@@ -246,17 +214,17 @@ export struct FamilyShareSettings {
       .alignItems(HorizontalAlign.Start)
       .layoutWeight(1)
 
-      // 开关样式
-      Text(isGranted ? '已开启' : '未开启')
+      Text(this.grantedCategories.includes(item.category) ? '已开启' : '未开启')
         .fontSize(12)
-        .fontColor(isGranted ? BRAND_GREEN : MUTED_TEXT)
+        .fontColor(this.grantedCategories.includes(item.category) ? BRAND_GREEN : MUTED_TEXT)
         .padding({ left: 10, right: 10, top: 5, bottom: 5 })
-        .backgroundColor(isGranted ? 'rgba(76, 175, 80, 0.1)' : '#F0F0F0')
+        .backgroundColor(this.grantedCategories.includes(item.category) ? 'rgba(76, 175, 80, 0.1)' : '#F0F0F0')
         .borderRadius(12)
         .enabled(!this.isViewMode)
         .onClick(() => {
-          if (this.isViewMode) return;
-          this.toggleCategory(item.category);
+          if (!this.isViewMode) {
+            this.toggleCategory(item.category);
+          }
         })
     }
     .width('100%')
@@ -272,8 +240,6 @@ export struct FamilyShareSettings {
       this.grantedCategories.push(category);
     }
   }
-
-  // ==================== 历史窗口 ====================
 
   @Builder
   HistoryWindowSection() {
@@ -311,8 +277,6 @@ export struct FamilyShareSettings {
     .borderRadius(CARD_RADIUS)
   }
 
-  // ==================== 说明 ====================
-
   @Builder
   NoteSection() {
     Column({ space: 8 }) {
@@ -339,8 +303,6 @@ export struct FamilyShareSettings {
     .borderRadius(CARD_RADIUS)
     .alignItems(HorizontalAlign.Start)
   }
-
-  // ==================== 保存 ====================
 
   private handleSave(): void {
     if (this.isSaving || !this.onSave) return;

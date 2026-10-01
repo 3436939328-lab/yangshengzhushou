@@ -18,13 +18,33 @@ import {
   sendConsultationMessage
 } from '../../services/ConsultationService';
 import { ConsultationHealthSnapshot } from '../consultation/ConsultationHealthSnapshot';
-import { HealthCardSummary } from '../../model/ProfileModels';
+import {
+  HealthCardSummary,
+  HealthProfile,
+  HealthMeasurement,
+  BloodPressureMeasurement,
+  BloodSugarMeasurement,
+  HeartRateMeasurement,
+  SleepMeasurement,
+  BodyMeasurement,
+  BloodPressureSummary,
+  BloodSugarSummary,
+  HeartRateSummary,
+  SleepSummary,
+  BodySummary,
+  AssessmentState,
+  BloodSugarType,
+  HeartRateContext,
+  SleepType
+} from '../../model/ProfileModels';
+import { createDefaultHealthProfile } from '../../services/ProfileRepository';
 
 @Component
 export struct UserConsultationTab {
   @Prop userId: string;
   @Prop userName: string = '';
   @Prop userPhone: string = '';
+  @Prop profile: HealthProfile = createDefaultHealthProfile();
 
   @State doctors: DoctorOption[] = [];
   @State consultations: ConsultationThread[] = [];
@@ -40,13 +60,14 @@ export struct UserConsultationTab {
   @State shareHealthCard: boolean = true;
   @State showChat: boolean = false;
   // 用户自定义分享给医生的个人信息开关
-  @State shareName: boolean = false;
-  @State shareAge: boolean = false;
-  @State shareGender: boolean = false;
-  @State sharePhone: boolean = false;
+  @State shareName: boolean = true;
+  @State shareAge: boolean = true;
+  @State shareGender: boolean = true;
+  @State sharePhone: boolean = true;
   @State customName: string = '';
   @State customAge: string = '';
   @State customGender: string = '';
+  @State customPhone: string = '';
   private messageScroller: Scroller = new Scroller();
 
   aboutToAppear() {
@@ -361,10 +382,12 @@ export struct UserConsultationTab {
           .fontColor(DEEP_TEXT)
           .width(50)
         if (this.sharePhone) {
-          Text(this.userPhone.length > 0 ? this.userPhone : '未绑定手机号')
+          TextInput({ placeholder: '请输入手机号', text: this.userPhone })
+            .height(36)
             .fontSize(13)
-            .fontColor(MUTED_TEXT)
             .layoutWeight(1)
+            .type(InputType.PhoneNumber)
+            .onChange((value: string) => { this.customPhone = value; })
         } else {
           Text('不展示')
             .fontSize(12)
@@ -643,11 +666,28 @@ export struct UserConsultationTab {
       : '';
     const sharedAgeText = this.shareAge ? this.customAge : '';
     const sharedAge = sharedAgeText.length > 0 ? Number(sharedAgeText) : 0;
-    const sharedGender = this.shareGender ? this.customGender : '';
-    const sharedPhone = this.sharePhone ? this.userPhone : '';
+    const sharedGender = this.shareGender
+      ? (this.customGender.length > 0 ? this.customGender : '')
+      : '';
+    const sharedPhone = this.sharePhone
+      ? (this.customPhone.length > 0 ? this.customPhone : this.userPhone)
+      : '';
+
+    // 构建健康快照JSON
+    let healthSnapshotJson = '';
+    let tongueImageUrls = '';
+    if (this.shareHealthCard) {
+      const snapshot = this.buildHealthCardSummary();
+      if (snapshot) {
+        healthSnapshotJson = JSON.stringify(snapshot);
+      }
+      tongueImageUrls = this.buildTongueImageUrls();
+    }
+
     createConsultation(
       this.userId, this.selectedDoctorId, this.symptom.trim(), this.description.trim(),
-      sharedName, sharedAge, sharedGender, sharedPhone
+      sharedName, sharedAge, sharedGender, sharedPhone,
+      healthSnapshotJson, tongueImageUrls
     ).then((saved: boolean) => {
       this.feedback = saved ? '问诊提交成功。' : '问诊提交失败。';
       if (saved) {
@@ -756,14 +796,110 @@ export struct UserConsultationTab {
     if (this.userId.length === 0) {
       return null;
     }
+    // 从用户的结构化测量记录中提取关键指标
+    const measurements = this.profile.measurements;
+    let bloodPressure: BloodPressureSummary | null = null;
+    let bloodSugar: BloodSugarSummary | null = null;
+    let heartRate: HeartRateSummary | null = null;
+    let sleep: SleepSummary | null = null;
+    let body: BodySummary | null = null;
+    let attentionCount = 0;
+
+    if (measurements) {
+      for (const m of measurements) {
+        if (m.metricCode === 'BLOOD_PRESSURE' && !bloodPressure) {
+          const bp = m as BloodPressureMeasurement;
+          const outOfRange = bp.systolic >= 140 || bp.diastolic >= 90;
+          if (outOfRange) attentionCount++;
+          bloodPressure = {
+            systolic: bp.systolic,
+            diastolic: bp.diastolic,
+            state: outOfRange ? AssessmentState.ATTENTION : AssessmentState.IN_RANGE,
+            stateText: outOfRange ? '偏高' : '正常',
+            measuredAt: bp.measuredAt
+          };
+        } else if (m.metricCode === 'BLOOD_SUGAR' && !bloodSugar) {
+          const bs = m as BloodSugarMeasurement;
+          const outOfRange = bs.value > 7 || bs.value < 3.9;
+          if (outOfRange) attentionCount++;
+          bloodSugar = {
+            value: bs.value,
+            unit: 'mmol/L',
+            type: bs.sugarType,
+            typeText: bs.sugarType === BloodSugarType.FASTING ? '空腹' : (bs.sugarType === BloodSugarType.POST_MEAL_2H ? '餐后2h' : '随机'),
+            state: outOfRange ? AssessmentState.ATTENTION : AssessmentState.IN_RANGE,
+            stateText: outOfRange ? '异常' : '正常',
+            measuredAt: bs.measuredAt
+          };
+        } else if (m.metricCode === 'HEART_RATE' && !heartRate) {
+          const hr = m as HeartRateMeasurement;
+          const outOfRange = hr.value > 100 || hr.value < 60;
+          if (outOfRange) attentionCount++;
+          heartRate = {
+            value: hr.value,
+            unit: '次/分',
+            context: hr.context,
+            state: outOfRange ? AssessmentState.ATTENTION : AssessmentState.IN_RANGE,
+            stateText: outOfRange ? '异常' : '正常',
+            measuredAt: hr.measuredAt
+          };
+        } else if (m.metricCode === 'SLEEP' && !sleep) {
+          const sl = m as SleepMeasurement;
+          const hours = sl.totalSleepMinutes / 60;
+          const outOfRange = hours < 6 || hours > 9;
+          if (outOfRange) attentionCount++;
+          sleep = {
+            totalMinutes: sl.totalSleepMinutes,
+            totalText: `${Math.round(hours * 10) / 10}小时`,
+            sleepType: sl.sleepType,
+            state: outOfRange ? AssessmentState.ATTENTION : AssessmentState.IN_RANGE,
+            stateText: outOfRange ? '异常' : '正常',
+            measuredAt: sl.measuredAt,
+            source: sl.subjectiveFeeling || 'manual'
+          };
+        } else if (m.metricCode === 'BODY' && !body) {
+          const bd = m as BodyMeasurement;
+          if (bd.weightKg !== undefined) {
+            body = {
+              weightKg: bd.weightKg,
+              bmi: bd.bmi !== undefined ? bd.bmi : 0,
+              state: AssessmentState.IN_RANGE,
+              stateText: '正常',
+              measuredAt: bd.measuredAt
+            };
+          }
+        }
+      }
+    }
+
     return {
       subjectId: this.userId,
-      subjectName: '我',
+      subjectName: this.userName || '我',
       generatedAt: new Date().toISOString(),
-      attentionCount: 0,
+      attentionCount,
       urgentCount: 0,
-      missingCategories: []
+      missingCategories: [],
+      bloodPressure: bloodPressure || undefined,
+      bloodSugar: bloodSugar || undefined,
+      heartRate: heartRate || undefined,
+      sleep: sleep || undefined,
+      body: body || undefined
     };
+  }
+
+  private buildTongueImageUrls(): string {
+    if (!this.profile.tongueImages || this.profile.tongueImages.length === 0) {
+      return '';
+    }
+    const urls: string[] = [];
+    for (const img of this.profile.tongueImages) {
+      if (img.imageUrl && img.imageUrl.length > 0) {
+        urls.push(img.imageUrl);
+      } else if (img.thumbnailUrl && img.thumbnailUrl.length > 0) {
+        urls.push(img.thumbnailUrl);
+      }
+    }
+    return urls.join(',');
   }
 
   private scrollMessagesToBottom(): void {

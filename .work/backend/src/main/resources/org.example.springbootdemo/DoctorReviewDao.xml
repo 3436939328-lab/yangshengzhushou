@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.example.springbootdemo.dao.DoctorReviewDao">
+  <resultMap id="BaseResultMap" type="org.example.springbootdemo.bean.DoctorReview">
+    <id column="id" property="id" jdbcType="BIGINT" />
+    <result column="doctor_user_id" property="doctorUserId" jdbcType="BIGINT" />
+    <result column="reviewer_id" property="reviewerId" jdbcType="BIGINT" />
+    <result column="status" property="status" jdbcType="VARCHAR" />
+    <result column="reason" property="reason" jdbcType="VARCHAR" />
+    <result column="version" property="version" jdbcType="INTEGER" />
+    <result column="created_at" property="createdAt" jdbcType="TIMESTAMP" />
+    <result column="submitted_at" property="submittedAt" jdbcType="TIMESTAMP" />
+    <result column="reviewed_at" property="reviewedAt" jdbcType="TIMESTAMP" />
+  </resultMap>
+
+  <sql id="Base_Column_List">
+    id, doctor_user_id, reviewer_id, status, reason, version, created_at, submitted_at, reviewed_at
+  </sql>
+
+  <insert id="insertSelective" parameterType="org.example.springbootdemo.bean.DoctorReview"
+          useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    insert into doctor_review
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">id,</if>
+      <if test="doctorUserId != null">doctor_user_id,</if>
+      <if test="reviewerId != null">reviewer_id,</if>
+      <if test="status != null">status,</if>
+      <if test="reason != null">reason,</if>
+      <if test="version != null">version,</if>
+      <if test="createdAt != null">created_at,</if>
+      <if test="submittedAt != null">submitted_at,</if>
+      <if test="reviewedAt != null">reviewed_at,</if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">#{id,jdbcType=BIGINT},</if>
+      <if test="doctorUserId != null">#{doctorUserId,jdbcType=BIGINT},</if>
+      <if test="reviewerId != null">#{reviewerId,jdbcType=BIGINT},</if>
+      <if test="status != null">#{status,jdbcType=VARCHAR},</if>
+      <if test="reason != null">#{reason,jdbcType=VARCHAR},</if>
+      <if test="version != null">#{version,jdbcType=INTEGER},</if>
+      <if test="createdAt != null">#{createdAt,jdbcType=TIMESTAMP},</if>
+      <if test="submittedAt != null">#{submittedAt,jdbcType=TIMESTAMP},</if>
+      <if test="reviewedAt != null">#{reviewedAt,jdbcType=TIMESTAMP},</if>
+    </trim>
+  </insert>
+
+  <update id="updateStatus" parameterType="org.example.springbootdemo.bean.DoctorReview">
+    update doctor_review
+    <set>
+      <if test="reviewerId != null">reviewer_id = #{reviewerId,jdbcType=BIGINT},</if>
+      <if test="status != null">status = #{status,jdbcType=VARCHAR},</if>
+      <if test="reason != null">reason = #{reason,jdbcType=VARCHAR},</if>
+      <if test="submittedAt != null">submitted_at = #{submittedAt,jdbcType=TIMESTAMP},</if>
+      <if test="reviewedAt != null">reviewed_at = #{reviewedAt,jdbcType=TIMESTAMP},</if>
+    </set>
+    where id = #{id,jdbcType=BIGINT} and version = #{version,jdbcType=INTEGER}
+  </update>
+
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List" />
+    from doctor_review
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+
+  <select id="selectByDoctorUserIdOrderByVersionDesc" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List" />
+    from doctor_review
+    where doctor_user_id = #{doctorUserId,jdbcType=BIGINT}
+    order by version desc, id desc
+  </select>
+
+  <select id="selectLatestByDoctorUserId" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List" />
+    from doctor_review
+    where doctor_user_id = #{doctorUserId,jdbcType=BIGINT}
+    order by id desc
+    limit 1
+  </select>
+
+  <select id="selectListForAdmin" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List" />
+    from doctor_review
+    <where>
+      <if test="status != null and status != ''">
+        and status = #{status,jdbcType=VARCHAR}
+      </if>
+    </where>
+    order by created_at desc
+    limit #{offset}, #{size}
+  </select>
+
+  <select id="countListForAdmin" resultType="long">
+    select count(*) from doctor_review
+    <where>
+      <if test="status != null and status != ''">
+        and status = #{status,jdbcType=VARCHAR}
+      </if>
+    </where>
+  </select>
+
+  <select id="selectPendingByDoctorUserId" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List" />
+    from doctor_review
+    where doctor_user_id = #{doctorUserId,jdbcType=BIGINT}
+      and status in ('PENDING', 'NEED_INFO')
+    order by id desc
+    limit 1
+  </select>
+</mapper>

@@ -117,10 +117,10 @@ interface PermissionRequestResult {
 
 export function buildCurrentLocationRequest(): geoLocationManager.CurrentLocationRequest {
   const request: geoLocationManager.CurrentLocationRequest = {
-    priority: geoLocationManager.LocationRequestPriority.FIRST_FIX,
+    priority: geoLocationManager.LocationRequestPriority.ACCURACY,
     scenario: geoLocationManager.LocationRequestScenario.DAILY_LIFE_SERVICE,
-    timeoutMs: 10000,
-    maxAccuracy: 1000
+    timeoutMs: 15000,
+    maxAccuracy: 500
   };
   return request;
 }
@@ -271,8 +271,8 @@ export function isFreshCoordinate(coordinate: LocationCoordinate, now: number = 
   return Number.isFinite(coordinate.latitude) && Number.isFinite(coordinate.longitude)
     && coordinate.latitude >= -90 && coordinate.latitude <= 90
     && coordinate.longitude >= -180 && coordinate.longitude <= 180
-    && coordinate.timestamp !== undefined && Math.abs(now - coordinate.timestamp) <= 300000
-    && coordinate.accuracy !== undefined && coordinate.accuracy >= 0 && coordinate.accuracy <= 5000;
+    && coordinate.timestamp !== undefined && Math.abs(now - coordinate.timestamp) <= 600000
+    && (coordinate.accuracy === undefined || (coordinate.accuracy >= 0 && coordinate.accuracy <= 10000));
 }
 
 function attachLocation(weather: WeatherWellness, coordinate: LocationCoordinate): WeatherWellness {

@@ -1,7 +1,7 @@
 import {
   FamilyMemberCard,
   FamilyRelationStatus
-} from '../tabs/FamilyTab';
+} from '../../model/FamilyModels';
 import {
   HealthCardSummary,
   MetricCode,

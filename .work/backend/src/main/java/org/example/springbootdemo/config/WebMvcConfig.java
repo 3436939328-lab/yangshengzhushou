@@ -19,7 +19,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
         registry.addInterceptor(authInterceptor)
                 .addPathPatterns("/api/**", "/user/**", "/role/**", "/user-role/**",
                         "/health-archive/**", "/health-question/**", "/doctor-profile/**",
-                        "/consultation/**", "/consultation-message/**")
+                        "/consultation/**", "/consultation-message/**",
+                        "/api/doctor-registration/**", "/api/doctor/**", "/api/admin/**")
                 .excludePathPatterns("/api/auth/**", "/api/weather/**", "/health", "/api/health");
     }
 }

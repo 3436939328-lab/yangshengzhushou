@@ -16,25 +16,29 @@
     <result column="shared_age" property="sharedAge" jdbcType="INTEGER" />
     <result column="shared_gender" property="sharedGender" jdbcType="VARCHAR" />
     <result column="shared_phone" property="sharedPhone" jdbcType="VARCHAR" />
+    <result column="health_snapshot" property="healthSnapshot" jdbcType="LONGVARCHAR" />
+    <result column="tongue_image_urls" property="tongueImageUrls" jdbcType="VARCHAR" />
   </resultMap>
 
+  <sql id="Base_Column_List">
+    id, user_id, doctor_id, title, symptom, description, status, create_time,
+    shared_name, shared_age, shared_gender, shared_phone, health_snapshot, tongue_image_urls
+  </sql>
+
   <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long">
-    select id, user_id, doctor_id, title, symptom, description, status, create_time,
-           shared_name, shared_age, shared_gender, shared_phone
+    select <include refid="Base_Column_List" />
     from consultation
     where id = #{id,jdbcType=BIGINT}
   </select>
 
   <select id="selectList" resultMap="BaseResultMap">
-    select id, user_id, doctor_id, title, symptom, description, status, create_time,
-           shared_name, shared_age, shared_gender, shared_phone
+    select <include refid="Base_Column_List" />
     from consultation
     order by id desc
   </select>
 
   <select id="selectListByFilter" resultMap="BaseResultMap">
-    select id, user_id, doctor_id, title, symptom, description, status, create_time,
-           shared_name, shared_age, shared_gender, shared_phone
+    select <include refid="Base_Column_List" />
     from consultation
     <where>
       <if test="userId != null">user_id = #{userId,jdbcType=BIGINT}</if>
@@ -50,12 +54,13 @@
 
   <insert id="insert" parameterType="org.example.springbootdemo.bean.Consultation">
     insert into consultation (id, user_id, doctor_id, title, symptom, description, status, create_time,
-      shared_name, shared_age, shared_gender, shared_phone)
+      shared_name, shared_age, shared_gender, shared_phone, health_snapshot, tongue_image_urls)
     values (
       #{id,jdbcType=BIGINT}, #{userId,jdbcType=BIGINT}, #{doctorId,jdbcType=BIGINT},
       #{title,jdbcType=VARCHAR}, #{symptom,jdbcType=VARCHAR}, #{description,jdbcType=VARCHAR}, #{status,jdbcType=TINYINT},
       #{createTime,jdbcType=TIMESTAMP},
-      #{sharedName,jdbcType=VARCHAR}, #{sharedAge,jdbcType=INTEGER}, #{sharedGender,jdbcType=VARCHAR}, #{sharedPhone,jdbcType=VARCHAR}
+      #{sharedName,jdbcType=VARCHAR}, #{sharedAge,jdbcType=INTEGER}, #{sharedGender,jdbcType=VARCHAR}, #{sharedPhone,jdbcType=VARCHAR},
+      #{healthSnapshot,jdbcType=LONGVARCHAR}, #{tongueImageUrls,jdbcType=VARCHAR}
     )
   </insert>
 
@@ -70,10 +75,12 @@
       <if test="description != null">description,</if>
       <if test="status != null">status,</if>
       <if test="createTime != null">create_time,</if>
-      <if test="sharedName != null">shared_name,</if>
+      shared_name,
       <if test="sharedAge != null">shared_age,</if>
-      <if test="sharedGender != null">shared_gender,</if>
-      <if test="sharedPhone != null">shared_phone,</if>
+      shared_gender,
+      shared_phone,
+      <if test="healthSnapshot != null">health_snapshot,</if>
+      <if test="tongueImageUrls != null">tongue_image_urls,</if>
     </trim>
     <trim prefix="values (" suffix=")" suffixOverrides=",">
       <if test="id != null">#{id,jdbcType=BIGINT},</if>
@@ -84,10 +91,12 @@
       <if test="description != null">#{description,jdbcType=VARCHAR},</if>
       <if test="status != null">#{status,jdbcType=TINYINT},</if>
       <if test="createTime != null">#{createTime,jdbcType=TIMESTAMP},</if>
-      <if test="sharedName != null">#{sharedName,jdbcType=VARCHAR},</if>
+      #{sharedName,jdbcType=VARCHAR},
       <if test="sharedAge != null">#{sharedAge,jdbcType=INTEGER},</if>
-      <if test="sharedGender != null">#{sharedGender,jdbcType=VARCHAR},</if>
-      <if test="sharedPhone != null">#{sharedPhone,jdbcType=VARCHAR},</if>
+      #{sharedGender,jdbcType=VARCHAR},
+      #{sharedPhone,jdbcType=VARCHAR},
+      <if test="healthSnapshot != null">#{healthSnapshot,jdbcType=LONGVARCHAR},</if>
+      <if test="tongueImageUrls != null">#{tongueImageUrls,jdbcType=VARCHAR},</if>
     </trim>
   </insert>
 
@@ -105,6 +114,8 @@
       <if test="sharedAge != null">shared_age = #{sharedAge,jdbcType=INTEGER},</if>
       <if test="sharedGender != null">shared_gender = #{sharedGender,jdbcType=VARCHAR},</if>
       <if test="sharedPhone != null">shared_phone = #{sharedPhone,jdbcType=VARCHAR},</if>
+      <if test="healthSnapshot != null">health_snapshot = #{healthSnapshot,jdbcType=LONGVARCHAR},</if>
+      <if test="tongueImageUrls != null">tongue_image_urls = #{tongueImageUrls,jdbcType=VARCHAR},</if>
     </set>
     where id = #{id,jdbcType=BIGINT}
   </update>
@@ -121,7 +132,9 @@
       shared_name = #{sharedName,jdbcType=VARCHAR},
       shared_age = #{sharedAge,jdbcType=INTEGER},
       shared_gender = #{sharedGender,jdbcType=VARCHAR},
-      shared_phone = #{sharedPhone,jdbcType=VARCHAR}
+      shared_phone = #{sharedPhone,jdbcType=VARCHAR},
+      health_snapshot = #{healthSnapshot,jdbcType=LONGVARCHAR},
+      tongue_image_urls = #{tongueImageUrls,jdbcType=VARCHAR}
     where id = #{id,jdbcType=BIGINT}
   </update>
 </mapper>

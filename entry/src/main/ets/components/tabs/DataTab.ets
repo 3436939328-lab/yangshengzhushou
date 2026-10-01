@@ -1,4 +1,19 @@
-import { HealthProfile, MetricCode, AssessmentState } from '../../model/ProfileModels';
+import {
+  HealthProfile,
+  MetricCode,
+  AssessmentState,
+  HealthMeasurement,
+  BloodPressureMeasurement,
+  BloodSugarMeasurement,
+  HeartRateMeasurement,
+  BloodOxygenMeasurement,
+  TemperatureMeasurement,
+  BodyMeasurement,
+  StepsMeasurement,
+  ExerciseMeasurement,
+  WaterMeasurement,
+  SleepMeasurement
+} from '../../model/ProfileModels';
 import {
   DeviceStatus,
   HealthMetric,
@@ -63,6 +78,9 @@ export struct DataTab {
 
   build() {
     Column({ space: 14 }) {
+      // 异常指标提醒
+      this.AbnormalAlertSection()
+
       // 健康卡摘要
       this.HealthSummaryCard()
 
@@ -83,6 +101,69 @@ export struct DataTab {
       this.DeviceSyncCard()
     }
     .margin({ top: 14 })
+  }
+
+  // ==================== 异常指标提醒 ====================
+
+  @Builder
+  AbnormalAlertSection() {
+    if (this.getAbnormalMetrics().length > 0) {
+      Column({ space: 8 }) {
+        ForEach(this.getAbnormalMetrics(), (item: SummaryMetricItem) => {
+          Row() {
+            Text('⚠️')
+              .fontSize(20)
+            Column({ space: 2 }) {
+              Text(`${item.label}：${item.value}`)
+                .fontSize(14)
+                .fontWeight(FontWeight.Medium)
+                .fontColor(WARM_ACCENT)
+              Text(`状态：${item.status}，建议关注或咨询医生`)
+                .fontSize(12)
+                .fontColor(MUTED_TEXT)
+            }
+            .layoutWeight(1)
+            .alignItems(HorizontalAlign.Start)
+            .margin({ left: 8 })
+          }
+          .width('100%')
+        }, (item: SummaryMetricItem) => item.label)
+      }
+      .width('100%')
+      .padding(14)
+      .backgroundColor('rgba(255, 152, 0, 0.08)')
+      .borderRadius(CARD_RADIUS)
+      .border({ width: 1, color: 'rgba(255, 152, 0, 0.3)' })
+    }
+  }
+
+  private getAbnormalMetrics(): SummaryMetricItem[] {
+    const result: SummaryMetricItem[] = [];
+    const bp = this.findLatestMeasurement(MetricCode.BLOOD_PRESSURE) as BloodPressureMeasurement | null;
+    if (bp && (bp.systolic >= 140 || bp.diastolic >= 90 || bp.systolic < 90 || bp.diastolic < 60)) {
+      result.push({ label: '血压', value: `${bp.systolic}/${bp.diastolic} mmHg`, status: this.getStructuredMetricStatus('血压') } as SummaryMetricItem);
+    }
+    const bs = this.findLatestMeasurement(MetricCode.BLOOD_SUGAR) as BloodSugarMeasurement | null;
+    if (bs && (bs.value > 7 || bs.value < 3.9)) {
+      result.push({ label: '血糖', value: `${bs.value} mmol/L`, status: this.getStructuredMetricStatus('血糖') } as SummaryMetricItem);
+    }
+    const hr = this.findLatestMeasurement(MetricCode.HEART_RATE) as HeartRateMeasurement | null;
+    if (hr && (hr.value > 100 || hr.value < 60)) {
+      result.push({ label: '心率', value: `${hr.value} 次/分`, status: this.getStructuredMetricStatus('心率') } as SummaryMetricItem);
+    }
+    const bo = this.findLatestMeasurement(MetricCode.BLOOD_OXYGEN) as BloodOxygenMeasurement | null;
+    if (bo && bo.value < 95) {
+      result.push({ label: '血氧', value: `${bo.value}%`, status: this.getStructuredMetricStatus('血氧') } as SummaryMetricItem);
+    }
+    const temp = this.findLatestMeasurement(MetricCode.TEMPERATURE) as TemperatureMeasurement | null;
+    if (temp && (temp.value >= 37.3 || temp.value < 36.0)) {
+      result.push({ label: '体温', value: `${temp.value} ℃`, status: this.getStructuredMetricStatus('体温') } as SummaryMetricItem);
+    }
+    const body = this.findLatestMeasurement(MetricCode.BODY) as BodyMeasurement | null;
+    if (body && body.bmi !== undefined && (body.bmi >= 24 || body.bmi < 18.5)) {
+      result.push({ label: 'BMI', value: `${body.bmi}`, status: this.getStructuredMetricStatus('体重') } as SummaryMetricItem);
+    }
+    return result;
   }
 
   // ==================== 健康卡摘要 ====================
@@ -151,64 +232,96 @@ export struct DataTab {
 
   private getAttentionCount(): number {
     let count = 0;
-    // 从旧格式指标中统计
+    // 从结构化测量记录中统计异常项
+    const bp = this.findLatestMeasurement(MetricCode.BLOOD_PRESSURE) as BloodPressureMeasurement | null;
+    if (bp && (bp.systolic >= 140 || bp.diastolic >= 90)) count++;
+    const bs = this.findLatestMeasurement(MetricCode.BLOOD_SUGAR) as BloodSugarMeasurement | null;
+    if (bs && bs.value > 7) count++;
+    const hr = this.findLatestMeasurement(MetricCode.HEART_RATE) as HeartRateMeasurement | null;
+    if (hr && (hr.value > 100 || hr.value < 60)) count++;
+    // 回退到旧格式
     for (const metric of this.profile.healthIndicators) {
       if (metric.name.includes('血压') || metric.name.includes('血糖')) {
         count++;
       }
     }
-    return Math.min(count, 3); // 模拟数据
+    return Math.min(count, 3);
   }
 
   private getLastUpdateTime(): string {
-    if (this.profile.healthIndicators.length > 0) {
-      const last = this.profile.healthIndicators[this.profile.healthIndicators.length - 1];
-      return last.recordedAt || '今天';
+    let latestTime = '';
+    // 从结构化测量记录中找最新时间
+    if (this.profile.measurements && this.profile.measurements.length > 0) {
+      for (const m of this.profile.measurements) {
+        if (m.measuredAt && m.measuredAt > latestTime) {
+          latestTime = m.measuredAt;
+        }
+      }
     }
-    return '暂无记录';
+    // 回退到旧格式
+    if (latestTime.length === 0 && this.profile.healthIndicators.length > 0) {
+      const last = this.profile.healthIndicators[this.profile.healthIndicators.length - 1];
+      latestTime = last.recordedAt || '';
+    }
+    if (latestTime.length === 0) return '暂无记录';
+    if (latestTime.includes('T')) {
+      return latestTime.split('T')[0];
+    }
+    return latestTime;
   }
 
   private getSummaryMetrics(): SummaryMetricItem[] {
     const result: SummaryMetricItem[] = [];
-    const indicators = this.profile.healthIndicators;
 
-    // 血压
-    const bp = indicators.find(i => i.name.includes('血压'));
-    result.push({
-      label: '血压',
-      value: bp ? bp.value : '--',
-      status: bp && (bp.value.includes('140') || bp.value.includes('90')) ? 'attention' : 'normal'
-    } as SummaryMetricItem);
+    // 血压 - 优先结构化数据
+    const bpM = this.findLatestMeasurement(MetricCode.BLOOD_PRESSURE) as BloodPressureMeasurement | null;
+    const bpIndicator = this.profile.healthIndicators.find(i => i.name.includes('血压'));
+    const bpValue = bpM ? `${bpM.systolic}/${bpM.diastolic}` : (bpIndicator ? bpIndicator.value : '--');
+    const bpStatus = bpM
+      ? (bpM.systolic >= 140 || bpM.diastolic >= 90 ? 'attention' : 'normal')
+      : (bpIndicator && (bpIndicator.value.includes('140') || bpIndicator.value.includes('90')) ? 'attention' : 'normal');
+    result.push({ label: '血压', value: bpValue, status: bpStatus } as SummaryMetricItem);
 
     // 血糖
-    const bs = indicators.find(i => i.name.includes('血糖'));
-    result.push({
-      label: '血糖',
-      value: bs ? bs.value : '--',
-      status: 'normal'
-    } as SummaryMetricItem);
+    const bsM = this.findLatestMeasurement(MetricCode.BLOOD_SUGAR) as BloodSugarMeasurement | null;
+    const bsIndicator = this.profile.healthIndicators.find(i => i.name.includes('血糖'));
+    const bsValue = bsM ? `${bsM.value}` : (bsIndicator ? bsIndicator.value : '--');
+    result.push({ label: '血糖', value: bsValue, status: 'normal' } as SummaryMetricItem);
 
     // 心率
-    const hr = indicators.find(i => i.name.includes('心率'));
-    result.push({
-      label: '心率',
-      value: hr ? hr.value : '--',
-      status: 'normal'
-    } as SummaryMetricItem);
+    const hrM = this.findLatestMeasurement(MetricCode.HEART_RATE) as HeartRateMeasurement | null;
+    const hrIndicator = this.profile.healthIndicators.find(i => i.name.includes('心率'));
+    const hrValue = hrM ? `${hrM.value}` : (hrIndicator ? hrIndicator.value : '--');
+    result.push({ label: '心率', value: hrValue, status: 'normal' } as SummaryMetricItem);
 
     // 睡眠
-    const sleep = indicators.find(i => i.name.includes('睡眠'));
-    result.push({
-      label: '睡眠',
-      value: sleep ? sleep.value : '--',
-      status: 'normal'
-    } as SummaryMetricItem);
+    const sleepM = this.findLatestMeasurement(MetricCode.SLEEP) as SleepMeasurement | null;
+    const sleepIndicator = this.profile.healthIndicators.find(i => i.name.includes('睡眠'));
+    const sleepValue = sleepM ? `${sleepM.totalSleepMinutes}分钟` : (sleepIndicator ? sleepIndicator.value : '--');
+    result.push({ label: '睡眠', value: sleepValue, status: 'normal' } as SummaryMetricItem);
 
     return result;
   }
 
   private getMissingCategories(): string[] {
-    const existing = new Set(this.profile.healthIndicators.map(i => i.name));
+    const existing = new Set<string>();
+    for (const i of this.profile.healthIndicators) {
+      existing.add(i.name);
+    }
+    if (this.profile.measurements) {
+      for (const m of this.profile.measurements) {
+        switch (m.metricCode) {
+          case MetricCode.BLOOD_PRESSURE: existing.add('血压'); break;
+          case MetricCode.BLOOD_SUGAR: existing.add('血糖'); break;
+          case MetricCode.HEART_RATE: existing.add('心率'); break;
+          case MetricCode.BLOOD_OXYGEN: existing.add('血氧'); break;
+          case MetricCode.TEMPERATURE: existing.add('体温'); break;
+          case MetricCode.BODY: existing.add('体重'); break;
+          case MetricCode.SLEEP: existing.add('睡眠'); break;
+          case MetricCode.STEPS: existing.add('步数'); break;
+        }
+      }
+    }
     const all = ['血压', '血糖', '心率', '血氧', '体温', '体重', '睡眠', '步数'];
     return all.filter(name => !Array.from(existing).some(e => e.includes(name)));
   }
@@ -374,36 +487,183 @@ export struct DataTab {
     ];
   }
 
+  private findLatestMeasurement(metricCode: MetricCode): HealthMeasurement | null {
+    if (!this.profile.measurements || this.profile.measurements.length === 0) {
+      return null;
+    }
+    let latest: HealthMeasurement | null = null;
+    for (let index = 0; index < this.profile.measurements.length; index++) {
+      const m = this.profile.measurements[index];
+      if (m.metricCode === metricCode) {
+        if (latest === null || (m.measuredAt && m.measuredAt > (latest.measuredAt || ''))) {
+          latest = m;
+        }
+      }
+    }
+    return latest;
+  }
+
   private getMetricValue(nameKeyword: string): string {
+    // 优先从结构化测量记录中读取
+    const structured = this.getStructuredMetricValue(nameKeyword);
+    if (structured.length > 0) {
+      return structured;
+    }
+    // 回退到旧格式 healthIndicators
     const found = this.profile.healthIndicators.find(i => i.name.includes(nameKeyword));
     return found ? `${found.value}${found.unit}` : '未记录';
   }
 
+  private getStructuredMetricValue(nameKeyword: string): string {
+    if (nameKeyword.includes('血压')) {
+      const m = this.findLatestMeasurement(MetricCode.BLOOD_PRESSURE) as BloodPressureMeasurement | null;
+      if (m) return `${m.systolic}/${m.diastolic} mmHg`;
+    } else if (nameKeyword.includes('血糖')) {
+      const m = this.findLatestMeasurement(MetricCode.BLOOD_SUGAR) as BloodSugarMeasurement | null;
+      if (m) return `${m.value} mmol/L`;
+    } else if (nameKeyword.includes('心率')) {
+      const m = this.findLatestMeasurement(MetricCode.HEART_RATE) as HeartRateMeasurement | null;
+      if (m) return `${m.value} 次/分`;
+    } else if (nameKeyword.includes('血氧')) {
+      const m = this.findLatestMeasurement(MetricCode.BLOOD_OXYGEN) as BloodOxygenMeasurement | null;
+      if (m) return `${m.value}%`;
+    } else if (nameKeyword.includes('体温')) {
+      const m = this.findLatestMeasurement(MetricCode.TEMPERATURE) as TemperatureMeasurement | null;
+      if (m) return `${m.value} ℃`;
+    } else if (nameKeyword.includes('体重')) {
+      const m = this.findLatestMeasurement(MetricCode.BODY) as BodyMeasurement | null;
+      if (m) {
+        if (m.weightKg !== undefined) return `${m.weightKg} kg`;
+        if (m.bmi !== undefined) return `BMI ${m.bmi}`;
+      }
+    } else if (nameKeyword.includes('步数')) {
+      const m = this.findLatestMeasurement(MetricCode.STEPS) as StepsMeasurement | null;
+      if (m) return `${m.steps} 步`;
+    } else if (nameKeyword.includes('运动')) {
+      const m = this.findLatestMeasurement(MetricCode.EXERCISE) as ExerciseMeasurement | null;
+      if (m) return `${m.durationMinutes} 分钟`;
+    } else if (nameKeyword.includes('饮水')) {
+      const m = this.findLatestMeasurement(MetricCode.WATER) as WaterMeasurement | null;
+      if (m) return `${m.amountMl} mL`;
+    } else if (nameKeyword.includes('睡眠')) {
+      const m = this.findLatestMeasurement(MetricCode.SLEEP) as SleepMeasurement | null;
+      if (m) return `${m.totalSleepMinutes} 分钟`;
+    }
+    return '';
+  }
+
   private getMetricStatus(nameKeyword: string): string {
+    // 优先从结构化测量记录判断状态
+    const structuredStatus = this.getStructuredMetricStatus(nameKeyword);
+    if (structuredStatus.length > 0) {
+      return structuredStatus;
+    }
+    // 回退到旧格式
     const found = this.profile.healthIndicators.find(i => i.name.includes(nameKeyword));
     if (!found) return '';
-    // 简单模拟状态判断
     if (found.name.includes('血压') && found.value.includes('140')) return '偏高';
     if (found.name.includes('血糖') && parseFloat(found.value) > 7) return '偏高';
     return '正常';
   }
 
+  private getStructuredMetricStatus(nameKeyword: string): string {
+    if (nameKeyword.includes('血压')) {
+      const m = this.findLatestMeasurement(MetricCode.BLOOD_PRESSURE) as BloodPressureMeasurement | null;
+      if (m) {
+        if (m.systolic >= 180 || m.diastolic >= 110) return '高血压三级';
+        if (m.systolic >= 160 || m.diastolic >= 100) return '高血压二级';
+        if (m.systolic >= 140 || m.diastolic >= 90) return '偏高';
+        if (m.systolic < 90 || m.diastolic < 60) return '偏低';
+        return '正常';
+      }
+    } else if (nameKeyword.includes('血糖')) {
+      const m = this.findLatestMeasurement(MetricCode.BLOOD_SUGAR) as BloodSugarMeasurement | null;
+      if (m) {
+        if (m.value >= 11.1) return '偏高（糖尿病范围）';
+        if (m.value > 7) return '偏高';
+        if (m.value < 3.9) return '偏低';
+        return '正常';
+      }
+    } else if (nameKeyword.includes('心率')) {
+      const m = this.findLatestMeasurement(MetricCode.HEART_RATE) as HeartRateMeasurement | null;
+      if (m) {
+        if (m.value > 120 || m.value < 50) return '异常';
+        if (m.value > 100) return '偏快';
+        if (m.value < 60) return '偏慢';
+        return '正常';
+      }
+    } else if (nameKeyword.includes('血氧')) {
+      const m = this.findLatestMeasurement(MetricCode.BLOOD_OXYGEN) as BloodOxygenMeasurement | null;
+      if (m) {
+        if (m.value < 90) return '严重偏低';
+        if (m.value < 95) return '偏低';
+        return '正常';
+      }
+    } else if (nameKeyword.includes('体温')) {
+      const m = this.findLatestMeasurement(MetricCode.TEMPERATURE) as TemperatureMeasurement | null;
+      if (m) {
+        if (m.value >= 39.0) return '高热';
+        if (m.value >= 37.3) return '偏高';
+        if (m.value < 36.0) return '偏低';
+        return '正常';
+      }
+    } else if (nameKeyword.includes('体重')) {
+      const m = this.findLatestMeasurement(MetricCode.BODY) as BodyMeasurement | null;
+      if (m && m.bmi !== undefined) {
+        if (m.bmi >= 28) return '肥胖';
+        if (m.bmi >= 24) return '超重';
+        if (m.bmi < 18.5) return '偏瘦';
+        return '正常';
+      }
+    }
+    return '';
+  }
+
   private getMetricStatusColor(nameKeyword: string): ResourceColor {
     const status = this.getMetricStatus(nameKeyword);
-    if (status === '偏高') return WARM_ACCENT;
     if (status === '正常') return BRAND_GREEN;
-    return MUTED_TEXT;
+    if (status.length === 0) return MUTED_TEXT;
+    // 所有非正常状态都用警示色
+    return WARM_ACCENT;
   }
 
   private getMetricTime(nameKeyword: string): string {
+    // 优先从结构化测量记录读取时间
+    const structuredTime = this.getStructuredMetricTime(nameKeyword);
+    if (structuredTime.length > 0) {
+      return structuredTime;
+    }
+    // 回退到旧格式
     const found = this.profile.healthIndicators.find(i => i.name.includes(nameKeyword));
     if (!found) return '';
-    // 简化时间显示
     const time = found.recordedAt;
     if (time.includes('T')) {
       return time.split('T')[0];
     }
     return time;
+  }
+
+  private getStructuredMetricTime(nameKeyword: string): string {
+    let metricCode: MetricCode | null = null;
+    if (nameKeyword.includes('血压')) metricCode = MetricCode.BLOOD_PRESSURE;
+    else if (nameKeyword.includes('血糖')) metricCode = MetricCode.BLOOD_SUGAR;
+    else if (nameKeyword.includes('心率')) metricCode = MetricCode.HEART_RATE;
+    else if (nameKeyword.includes('血氧')) metricCode = MetricCode.BLOOD_OXYGEN;
+    else if (nameKeyword.includes('体温')) metricCode = MetricCode.TEMPERATURE;
+    else if (nameKeyword.includes('体重')) metricCode = MetricCode.BODY;
+    else if (nameKeyword.includes('步数')) metricCode = MetricCode.STEPS;
+    else if (nameKeyword.includes('运动')) metricCode = MetricCode.EXERCISE;
+    else if (nameKeyword.includes('饮水')) metricCode = MetricCode.WATER;
+    else if (nameKeyword.includes('睡眠')) metricCode = MetricCode.SLEEP;
+
+    if (metricCode === null) return '';
+    const m = this.findLatestMeasurement(metricCode);
+    if (!m) return '';
+    const time = m.measuredAt;
+    if (time && time.includes('T')) {
+      return time.split('T')[0];
+    }
+    return time || '';
   }
 
   // ==================== 舌象记录 ====================
@@ -589,6 +849,11 @@ export struct DataTab {
   }
 
   private getSleepDurationText(): string {
+    const sleepM = this.findLatestMeasurement(MetricCode.SLEEP) as SleepMeasurement | null;
+    if (sleepM) {
+      const hours = sleepM.totalSleepMinutes / 60;
+      return `${Math.round(hours * 10) / 10} 小时`;
+    }
     const sleep = this.profile.healthIndicators.find(i => i.name.includes('睡眠'));
     if (sleep) {
       return sleep.value + sleep.unit;
@@ -597,6 +862,13 @@ export struct DataTab {
   }
 
   private getSleepQualityText(): string {
+    const sleepM = this.findLatestMeasurement(MetricCode.SLEEP) as SleepMeasurement | null;
+    if (sleepM) {
+      const hours = sleepM.totalSleepMinutes / 60;
+      if (hours >= 7) return '良好';
+      if (hours >= 6) return '一般';
+      return '偏少';
+    }
     const sleep = this.profile.healthIndicators.find(i => i.name.includes('睡眠'));
     if (sleep) {
       const hours = parseFloat(sleep.value);
@@ -608,6 +880,7 @@ export struct DataTab {
   }
 
   private hasSleepData(): boolean {
+    if (this.findLatestMeasurement(MetricCode.SLEEP) !== null) return true;
     return this.profile.healthIndicators.some(i => i.name.includes('睡眠'));
   }
 

@@ -1,13 +1,15 @@
 import { common } from '@kit.AbilityKit';
 import { seasonBackground } from '../theme/SeasonBackground';
 import { getCurrentSolarTerm } from '../utils/SolarTermUtil';
-import { loadConnectionSettings } from '../services/ConnectionSettings';
+import { loadConnectionSettings, saveConnectionSettings } from '../services/ConnectionSettings';
+import { discoverBackendOnLan } from '../services/BackendDiscoveryService';
 import { QuickActionView } from '../components/QuickActionView';
 import { cancelUserReminders } from '../services/NotificationService';
 import { AdminAssistantLogsTab } from '../components/tabs/AdminAssistantLogsTab';
 import { AdminConsultationsTab } from '../components/tabs/AdminConsultationsTab';
 import { AdminOverviewTab } from '../components/tabs/AdminOverviewTab';
 import { AdminPeopleTab } from '../components/tabs/AdminPeopleTab';
+import { AdminDoctorReviewTab } from '../components/admin/AdminDoctorReviewTab';
 import { AppHeader } from '../components/AppHeader';
 import { AuthView } from '../components/AuthView';
 import { GuideView } from '../components/GuideView';
@@ -16,6 +18,7 @@ import { DataTab } from '../components/tabs/DataTab';
 import { FamilyTab } from '../components/tabs/FamilyTab';
 import { DoctorConsultationTab } from '../components/tabs/DoctorConsultationTab';
 import { DoctorProfileTab } from '../components/tabs/DoctorProfileTab';
+import { DoctorRegistrationView } from '../components/doctor/DoctorRegistrationView';
 import { HomeTab } from '../components/tabs/HomeTab';
 import { ProfileTab } from '../components/tabs/ProfileTab';
 import { UserConsultationTab } from '../components/tabs/UserConsultationTab';
@@ -91,6 +94,7 @@ struct Index {
   @State pendingMetricCode: MetricCode = MetricCode.BLOOD_PRESSURE;
   @State showHealthForm: boolean = false;
   @State showTongueView: boolean = false;
+  @State showDoctorRegistration: boolean = false;
   private calendarTimer: number = -1;
 
   private dashboard: WellnessDashboardData = createWellnessDashboardData();
@@ -139,6 +143,11 @@ struct Index {
         initialNotice: this.authNotice,
         onAuthenticated: (session: AuthSession) => {
           this.saveAuthenticatedSession(session);
+          // 医生角色首次登录后引导完善资料
+          const primary = this.primaryRole();
+          if (primary === 'DOCTOR') {
+            this.showDoctorRegistration = true;
+          }
         }
       })
     } else if (!this.hasEnteredApp) {
@@ -146,6 +155,15 @@ struct Index {
         guideIndex: $guideIndex,
         hasEnteredApp: $hasEnteredApp,
         guideSlides: this.dashboard.guideSlides
+      })
+    } else if (this.showDoctorRegistration) {
+      DoctorRegistrationView({
+        onCompleted: () => {
+          this.showDoctorRegistration = false;
+        },
+        onExit: () => {
+          this.showDoctorRegistration = false;
+        }
       })
     } else {
       this.MainView()
@@ -365,7 +383,8 @@ struct Index {
             UserConsultationTab({
               userId: this.authUserId(),
               userName: this.currentProfile.displayName,
-              userPhone: this.authPhoneText()
+              userPhone: this.authPhoneText(),
+              profile: this.currentProfile
             })
           } else if (this.currentTabKey() === 'doctorWorkbench') {
             DoctorConsultationTab({ doctorId: this.authUserId(), title: '医生工作台' })
@@ -379,6 +398,8 @@ struct Index {
             AdminPeopleTab()
           } else if (this.currentTabKey() === 'adminAssistantLogs') {
             AdminAssistantLogsTab()
+          } else if (this.currentTabKey() === 'adminDoctorReview') {
+            AdminDoctorReviewTab()
           } else if (this.currentTabKey() === 'adminConsultations') {
             AdminConsultationsTab()
           }
@@ -461,26 +482,70 @@ struct Index {
         this.isAuthChecked = true;
         this.loadCurrentProfileAndRefreshWeather();
       }
-    }).catch(() => {
-      if (this.authRepository) {
-        this.authRepository.clearSession().then(() => {
-          this.authSession = null;
-          setRuntimeAuthToken('');
-          this.currentTab = 0;
-          this.isAuthChecked = true;
-        }).catch(() => {
-          this.authSession = null;
-          setRuntimeAuthToken('');
-          this.currentTab = 0;
-          this.isAuthChecked = true;
-        });
+    }).catch((error: Error) => {
+      // 网络错误时尝试自动发现后端，避免因换网络导致已登录用户被踢下线
+      if (this.isNetworkError(error.message)) {
+        this.tryAutoDiscoverForSession(session);
       } else {
+        this.clearStoredSession();
+      }
+    });
+  }
+
+  private tryAutoDiscoverForSession(session: AuthSession): void {
+    discoverBackendOnLan().then((found: string) => {
+      if (found.length === 0) {
+        this.clearStoredSession();
+        return;
+      }
+      const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
+      saveConnectionSettings(context, found).then(() => {
+        // 重新校验 session
+        requestCurrentAuthSession(session).then((validatedSession: AuthSession) => {
+          this.applyAuthenticatedSession(validatedSession, true);
+          this.isAuthChecked = true;
+          this.loadCurrentProfileAndRefreshWeather();
+        }).catch(() => {
+          this.clearStoredSession();
+        });
+      }).catch(() => {
+        this.clearStoredSession();
+      });
+    }).catch(() => {
+      this.clearStoredSession();
+    });
+  }
+
+  private clearStoredSession(): void {
+    if (this.authRepository) {
+      this.authRepository.clearSession().then(() => {
         this.authSession = null;
         setRuntimeAuthToken('');
         this.currentTab = 0;
         this.isAuthChecked = true;
-      }
-    });
+      }).catch(() => {
+        this.authSession = null;
+        setRuntimeAuthToken('');
+        this.currentTab = 0;
+        this.isAuthChecked = true;
+      });
+    } else {
+      this.authSession = null;
+      setRuntimeAuthToken('');
+      this.currentTab = 0;
+      this.isAuthChecked = true;
+    }
+  }
+
+  private isNetworkError(message: string): boolean {
+    const lower = message.toLowerCase();
+    return lower.indexOf('无法连接') >= 0
+      || lower.indexOf('响应超时') >= 0
+      || lower.indexOf('timeout') >= 0
+      || lower.indexOf('econnrefused') >= 0
+      || lower.indexOf('connection refused') >= 0
+      || lower.indexOf('failed to fetch') >= 0
+      || lower.indexOf('network') >= 0;
   }
 
   private logout(): void {

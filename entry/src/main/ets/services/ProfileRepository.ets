@@ -158,7 +158,11 @@ function cloneProfile(profile: HealthProfile): HealthProfile {
     healthIndicators: profile.healthIndicators,
     tongueNotes: profile.tongueNotes,
     reminderPreferences: profile.reminderPreferences,
-    updatedAt: profile.updatedAt
+    updatedAt: profile.updatedAt,
+    measurements: profile.measurements,
+    tongueImages: profile.tongueImages,
+    userProfile: profile.userProfile,
+    healthCard: profile.healthCard
   };
 }
 

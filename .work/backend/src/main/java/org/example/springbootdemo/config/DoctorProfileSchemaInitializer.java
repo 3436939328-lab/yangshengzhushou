@@ -20,6 +20,13 @@ public class DoctorProfileSchemaInitializer implements CommandLineRunner {
               specialty VARCHAR(100) NULL,
               introduction VARCHAR(1000) NULL,
               create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              avatar VARCHAR(500) NULL,
+              department VARCHAR(100) NULL,
+              license_number VARCHAR(100) NULL,
+              license_image_urls VARCHAR(2000) NULL,
+              verification_status VARCHAR(20) NULL DEFAULT 'PENDING',
+              verification_remark VARCHAR(500) NULL,
+              accepting BOOLEAN NULL DEFAULT FALSE,
               UNIQUE KEY uk_doctor_profile_user (user_id),
               CONSTRAINT fk_doctor_profile_user FOREIGN KEY (user_id) REFERENCES sys_user(id)
             )
@@ -72,6 +79,27 @@ public class DoctorProfileSchemaInitializer implements CommandLineRunner {
         }
         if (!columns.contains("create_time")) {
             statements.add("ALTER TABLE doctor_profile ADD COLUMN create_time TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP AFTER introduction");
+        }
+        if (!columns.contains("avatar")) {
+            statements.add("ALTER TABLE doctor_profile ADD COLUMN avatar VARCHAR(500) NULL AFTER create_time");
+        }
+        if (!columns.contains("department")) {
+            statements.add("ALTER TABLE doctor_profile ADD COLUMN department VARCHAR(100) NULL AFTER avatar");
+        }
+        if (!columns.contains("license_number")) {
+            statements.add("ALTER TABLE doctor_profile ADD COLUMN license_number VARCHAR(100) NULL AFTER department");
+        }
+        if (!columns.contains("license_image_urls")) {
+            statements.add("ALTER TABLE doctor_profile ADD COLUMN license_image_urls VARCHAR(2000) NULL AFTER license_number");
+        }
+        if (!columns.contains("verification_status")) {
+            statements.add("ALTER TABLE doctor_profile ADD COLUMN verification_status VARCHAR(20) NULL DEFAULT 'PENDING' AFTER license_image_urls");
+        }
+        if (!columns.contains("verification_remark")) {
+            statements.add("ALTER TABLE doctor_profile ADD COLUMN verification_remark VARCHAR(500) NULL AFTER verification_status");
+        }
+        if (!columns.contains("accepting")) {
+            statements.add("ALTER TABLE doctor_profile ADD COLUMN accepting BOOLEAN NULL DEFAULT FALSE AFTER verification_remark");
         }
         return statements;
     }

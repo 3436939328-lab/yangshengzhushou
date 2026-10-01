@@ -26,6 +26,7 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
         ensureRole("ADMIN", "管理员");
+        ensureRole("DOCTOR", "医生");
         ensureRole("ADVISER", "养生顾问");
         ensureRole("USER", "普通用户");
 

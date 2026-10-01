@@ -45,7 +45,7 @@ export function getRoleTabs(primaryRole: string): RoleTabItem[] {
     return [
       { key: 'adminOverview', label: '总览' },
       { key: 'adminPeople', label: '人员' },
-      { key: 'adminAssistantLogs', label: '问答' },
+      { key: 'adminDoctorReview', label: '医生审核' },
       { key: 'adminConsultations', label: '问诊' },
       { key: 'profile', label: '我的' }
     ];

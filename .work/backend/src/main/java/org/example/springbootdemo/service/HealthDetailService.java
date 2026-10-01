@@ -35,6 +35,10 @@ public class HealthDetailService {
         );
     }
 
+    public java.util.List<HealthIndicatorRecord> getIndicatorRecordsByUserId(Long userId) {
+        return indicatorRecordDao.selectByUserId(userId);
+    }
+
     public HealthQuestionnaireRecord addQuestionnaireRecord(HealthQuestionnaireRecord record) {
         if (record.getCreateTime() == null) {
             record.setCreateTime(new Date());

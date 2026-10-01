@@ -22,6 +22,16 @@ public class Consultation implements Serializable {
     private String sharedGender;
     private String sharedPhone;
 
+    /**
+     * 用户健康快照（JSON 字符串，包含血压、血糖、心率、睡眠等指标摘要）
+     */
+    private String healthSnapshot;
+
+    /**
+     * 用户分享的舌象照片URL（多张用逗号分隔）
+     */
+    private String tongueImageUrls;
+
     private static final long serialVersionUID = 1L;
 
     public Long getId() {
@@ -118,5 +128,21 @@ public class Consultation implements Serializable {
 
     public void setSharedPhone(String sharedPhone) {
         this.sharedPhone = sharedPhone == null ? null : sharedPhone.trim();
+    }
+
+    public String getHealthSnapshot() {
+        return healthSnapshot;
+    }
+
+    public void setHealthSnapshot(String healthSnapshot) {
+        this.healthSnapshot = healthSnapshot == null ? null : healthSnapshot.trim();
+    }
+
+    public String getTongueImageUrls() {
+        return tongueImageUrls;
+    }
+
+    public void setTongueImageUrls(String tongueImageUrls) {
+        this.tongueImageUrls = tongueImageUrls == null ? null : tongueImageUrls.trim();
     }
 }

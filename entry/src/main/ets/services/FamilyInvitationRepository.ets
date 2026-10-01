@@ -1,6 +1,6 @@
 import { common } from '@kit.AbilityKit';
 import { preferences } from '@kit.ArkData';
-import { FamilyInvitation, FamilyRelationStatus, FamilyRelationType } from '../components/tabs/FamilyTab';
+import { FamilyInvitation, FamilyRelationStatus, FamilyRelationType } from '../model/FamilyModels';
 
 const STORE_NAME = 'wellness_family_invitations';
 const KEY_INVITATIONS = 'invitations';

@@ -30,6 +30,8 @@ interface ConsultationPayload {
   sharedAge?: number;
   sharedGender?: string;
   sharedPhone?: string;
+  healthSnapshot?: string;
+  tongueImageUrls?: string;
 }
 
 interface ConsultationMessagePayload {
@@ -50,6 +52,8 @@ interface CreateConsultationPayload {
   sharedAge?: number;
   sharedGender?: string;
   sharedPhone?: string;
+  healthSnapshot?: string;
+  tongueImageUrls?: string;
 }
 
 interface SendConsultationMessagePayload {
@@ -79,6 +83,8 @@ export interface ConsultationThread {
   sharedAge: number;
   sharedGender: string;
   sharedPhone: string;
+  healthSnapshot: string;
+  tongueImageUrls: string;
 }
 
 export interface ConsultationMessageItem {
@@ -226,7 +232,9 @@ export function buildConsultationThreadsFromPayload(payload: string): Consultati
       sharedName: item.sharedName ? item.sharedName : '',
       sharedAge: item.sharedAge ? item.sharedAge : 0,
       sharedGender: item.sharedGender ? item.sharedGender : '',
-      sharedPhone: item.sharedPhone ? item.sharedPhone : ''
+      sharedPhone: item.sharedPhone ? item.sharedPhone : '',
+      healthSnapshot: item.healthSnapshot ? item.healthSnapshot : '',
+      tongueImageUrls: item.tongueImageUrls ? item.tongueImageUrls : ''
     };
     return thread;
   }).filter((item: ConsultationThread) => item.id.length > 0);
@@ -279,17 +287,21 @@ export function createConsultation(
   sharedName?: string,
   sharedAge?: number,
   sharedGender?: string,
-  sharedPhone?: string
+  sharedPhone?: string,
+  healthSnapshot?: string,
+  tongueImageUrls?: string
 ): Promise<boolean> {
   const body: CreateConsultationPayload = {
     userId: Number(userId),
     doctorId: Number(doctorId),
     symptom,
     description,
-    sharedName: sharedName && sharedName.length > 0 ? sharedName : undefined,
-    sharedAge: sharedAge && sharedAge > 0 ? sharedAge : undefined,
-    sharedGender: sharedGender && sharedGender.length > 0 ? sharedGender : undefined,
-    sharedPhone: sharedPhone && sharedPhone.length > 0 ? sharedPhone : undefined
+    sharedName: sharedName && sharedName.length > 0 ? sharedName : '',
+    sharedAge: sharedAge && sharedAge > 0 ? sharedAge : 0,
+    sharedGender: sharedGender && sharedGender.length > 0 ? sharedGender : '',
+    sharedPhone: sharedPhone && sharedPhone.length > 0 ? sharedPhone : '',
+    healthSnapshot: healthSnapshot && healthSnapshot.length > 0 ? healthSnapshot : '',
+    tongueImageUrls: tongueImageUrls && tongueImageUrls.length > 0 ? tongueImageUrls : ''
   };
   return requestJson(buildApiUrl('/api/consultation'), http.RequestMethod.POST, body).then((payload: string) => {
     const errorMessage = buildConsultationSaveErrorMessage(payload);

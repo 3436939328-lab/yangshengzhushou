@@ -11,6 +11,9 @@ import {
   resetPasswordWithSmsCode,
   sendAuthSmsCode
 } from '../services/AuthService';
+import { discoverBackendOnLan } from '../services/BackendDiscoveryService';
+import { saveConnectionSettings } from '../services/ConnectionSettings';
+import { common } from '@kit.AbilityKit';
 import {
   BRAND_GREEN,
   CARD_BG,
@@ -44,6 +47,7 @@ export struct AuthView {
   @State actionText: string = '';
   @State isSubmitting: boolean = false;
   @State isSendingCode: boolean = false;
+  @State isAutoDiscovering: boolean = false;
 
   build() {
     Column() {
@@ -85,7 +89,7 @@ export struct AuthView {
           .width('100%')
           .height(48)
           .borderRadius(CARD_RADIUS)
-          .enabled(!this.isSubmitting)
+          .enabled(!this.isSubmitting && !this.isAutoDiscovering)
           .onClick(() => {
             this.submitAuth();
           })
@@ -318,6 +322,9 @@ export struct AuthView {
   }
 
   private primaryButtonText(): string {
+    if (this.isAutoDiscovering) {
+      return '查找后端中...';
+    }
     if (this.isSubmitting) {
       return '处理中...';
     }
@@ -395,12 +402,37 @@ export struct AuthView {
     }
     this.isSendingCode = true;
     this.actionText = '';
-    sendAuthSmsCode(targetPhone, purpose).then((result: SmsCodeResult) => {
+    this.executeSmsRequest(sendAuthSmsCode(targetPhone, purpose), purpose).then((result: SmsCodeResult) => {
       this.isSendingCode = false;
       this.actionText = result.devCode.length > 0 ? `验证码已发送，开发验证码：${result.devCode}` : '验证码已发送';
     }).catch((error: Error) => {
       this.isSendingCode = false;
       this.actionText = buildAuthFailureText(this.authMode === 'register', error.message);
+    });
+  }
+
+  private executeSmsRequest(request: Promise<SmsCodeResult>, purpose: string): Promise<SmsCodeResult> {
+    return request.catch((error: Error) => {
+      if (!this.isNetworkError(error.message)) {
+        return Promise.reject(error);
+      }
+      this.isAutoDiscovering = true;
+      this.actionText = '网络连接失败，正在自动查找后端...';
+      return discoverBackendOnLan().then((found: string) => {
+        this.isAutoDiscovering = false;
+        if (found.length === 0) {
+          return Promise.reject(new Error('无法连接后端，请确认 8181 后端已启动。'));
+        }
+        return saveConnectionSettings(this.getUIContext().getHostContext() as common.UIAbilityContext, found)
+          .then(() => {
+            this.actionText = `已自动切换到后端：${found}，正在重发验证码...`;
+            const targetPhone = purpose === 'RESET_PASSWORD' ? this.resetPhone : this.phone;
+            return sendAuthSmsCode(targetPhone, purpose);
+          });
+      }).catch(() => {
+        this.isAutoDiscovering = false;
+        return Promise.reject(new Error('网络连接失败，请点击"服务器连接设置"自动查找后端。'));
+      });
     });
   }
 
@@ -440,7 +472,7 @@ export struct AuthView {
 
     this.isSubmitting = true;
     this.actionText = '';
-    request.then((session: AuthSession) => {
+    this.executeAuthRequest(request).then((session: AuthSession) => {
       this.isSubmitting = false;
       if (this.onAuthenticated) {
         this.onAuthenticated(session);
@@ -449,6 +481,61 @@ export struct AuthView {
       this.isSubmitting = false;
       this.actionText = buildAuthFailureText(this.authMode === 'register', error.message);
     });
+  }
+
+  /**
+   * 执行认证请求，遇到网络错误时自动发现后端并重试一次。
+   */
+  private executeAuthRequest(request: Promise<AuthSession>): Promise<AuthSession> {
+    return request.catch((error: Error) => {
+      if (!this.isNetworkError(error.message)) {
+        return Promise.reject(error);
+      }
+      return this.autoDiscoverAndRetry(() => {
+        // 重新构建请求，因为 baseUrl 可能已变更
+        return this.rebuildAuthRequest();
+      });
+    });
+  }
+
+  private rebuildAuthRequest(): Promise<AuthSession> {
+    if (this.authMode === 'register') {
+      return registerWithPhone(this.phone, this.password, this.registerRoleCode, this.code);
+    }
+    if (this.loginMode === 'sms') {
+      return loginWithSmsCode(this.phone, this.code);
+    }
+    return loginWithPhone(this.phone, this.password);
+  }
+
+  private autoDiscoverAndRetry(retryFactory: () => Promise<AuthSession>): Promise<AuthSession> {
+    this.isAutoDiscovering = true;
+    this.actionText = '网络连接失败，正在自动查找后端...';
+    return discoverBackendOnLan().then((found: string) => {
+      this.isAutoDiscovering = false;
+      if (found.length === 0) {
+        return Promise.reject(new Error('无法连接后端，请确认 8181 后端已启动，且手机和电脑在同一网络。'));
+      }
+      return saveConnectionSettings(this.getUIContext().getHostContext() as common.UIAbilityContext, found)
+        .then(() => {
+          this.actionText = `已自动切换到后端：${found}，正在重试...`;
+          return retryFactory();
+        });
+    }).catch((discoveryError: Error) => {
+      this.isAutoDiscovering = false;
+      return Promise.reject(new Error('网络连接失败，请点击"服务器连接设置"使用电脑名或自动查找后端。'));
+    });
+  }
+
+  private isNetworkError(message: string): boolean {
+    const lower = message.toLowerCase();
+    return lower.indexOf('无法连接') >= 0
+      || lower.indexOf('响应超时') >= 0
+      || lower.indexOf('timeout') >= 0
+      || lower.indexOf('econnrefused') >= 0
+      || lower.indexOf('connection refused') >= 0
+      || lower.indexOf('failed to fetch') >= 0
+      || lower.indexOf('network') >= 0;
   }
 
   private submitPasswordReset(): void {

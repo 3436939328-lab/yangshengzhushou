@@ -2,6 +2,7 @@ package org.example.springbootdemo.rag;
 
 import org.example.springbootdemo.ai.AssistantSuggestionReply;
 import org.example.springbootdemo.ai.AssistantSuggestionRequest;
+import org.example.springbootdemo.ai.NodeAssistantOrchestrationClient;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -17,6 +18,7 @@ public class RagSuggestionService {
     private final RagSuggestionPromptBuilder promptBuilder;
     private final LocalLlmClient llmClient;
     private final RagRetrievalLogService logService;
+    private final NodeAssistantOrchestrationClient nodeClient;
     @org.springframework.beans.factory.annotation.Autowired
     private org.example.springbootdemo.ai.HealthQuestionAiProperties aiProperties = new org.example.springbootdemo.ai.HealthQuestionAiProperties();
 
@@ -25,13 +27,15 @@ public class RagSuggestionService {
             MilvusVectorClient vectorClient,
             RagSuggestionPromptBuilder promptBuilder,
             LocalLlmClient llmClient,
-            RagRetrievalLogService logService
+            RagRetrievalLogService logService,
+            NodeAssistantOrchestrationClient nodeClient
     ) {
         this.retrievalService = retrievalService;
         this.vectorClient = vectorClient;
         this.promptBuilder = promptBuilder;
         this.llmClient = llmClient;
         this.logService = logService;
+        this.nodeClient = nodeClient;
     }
 
     public AssistantSuggestionReply suggest(AssistantSuggestionRequest request) {
@@ -44,6 +48,15 @@ public class RagSuggestionService {
         try {
             result = llmClient.generate(prompt);
         } catch (RuntimeException exception) {
+            // LLM 不可用时回退到 Node.js AI 服务（规则兜底）
+            try {
+                AssistantSuggestionReply nodeReply = nodeClient.suggest(request);
+                if (nodeReply != null) {
+                    return nodeReply;
+                }
+            } catch (RuntimeException nodeException) {
+                // Node.js 回退也失败，继续抛出原始异常
+            }
             throw new RagSuggestionUnavailableException("AI provider unavailable", exception);
         }
         logService.logSearch(null, queryText, mergedHits);

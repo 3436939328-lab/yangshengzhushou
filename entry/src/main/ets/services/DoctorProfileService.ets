@@ -16,6 +16,13 @@ interface DoctorProfilePayload {
   title?: string;
   specialty?: string;
   introduction?: string;
+  avatar?: string;
+  department?: string;
+  licenseNumber?: string;
+  licenseImageUrls?: string;
+  verificationStatus?: string;
+  verificationRemark?: string;
+  accepting?: boolean;
 }
 
 interface SaveDoctorProfilePayload {
@@ -25,6 +32,12 @@ interface SaveDoctorProfilePayload {
   title: string;
   specialty: string;
   introduction: string;
+  avatar?: string;
+  department?: string;
+  licenseNumber?: string;
+  licenseImageUrls?: string;
+  verificationStatus?: string;
+  accepting?: boolean;
 }
 
 export interface DoctorProfileForm {
@@ -34,6 +47,13 @@ export interface DoctorProfileForm {
   title: string;
   specialty: string;
   introduction: string;
+  avatar: string;
+  department: string;
+  licenseNumber: string;
+  licenseImageUrls: string;
+  verificationStatus: string;
+  verificationRemark: string;
+  accepting: boolean;
 }
 
 function parseResponse(payload: string): ApiResponsePayload {
@@ -68,7 +88,14 @@ export function createEmptyDoctorProfile(userId: string): DoctorProfileForm {
     doctorName: '',
     title: '',
     specialty: '',
-    introduction: ''
+    introduction: '',
+    avatar: '',
+    department: '',
+    licenseNumber: '',
+    licenseImageUrls: '',
+    verificationStatus: 'PENDING',
+    verificationRemark: '',
+    accepting: false
   };
   return profile;
 }
@@ -85,7 +112,14 @@ export function buildDoctorProfileFromPayload(payload: string, fallbackUserId: s
     doctorName: data.doctorName ? data.doctorName : '',
     title: data.title ? data.title : '',
     specialty: data.specialty ? data.specialty : '',
-    introduction: data.introduction ? data.introduction : ''
+    introduction: data.introduction ? data.introduction : '',
+    avatar: data.avatar ? data.avatar : '',
+    department: data.department ? data.department : '',
+    licenseNumber: data.licenseNumber ? data.licenseNumber : '',
+    licenseImageUrls: data.licenseImageUrls ? data.licenseImageUrls : '',
+    verificationStatus: data.verificationStatus ? data.verificationStatus : 'PENDING',
+    verificationRemark: data.verificationRemark ? data.verificationRemark : '',
+    accepting: data.accepting === true
   };
   return profile;
 }
@@ -149,7 +183,13 @@ export function saveDoctorProfile(profile: DoctorProfileForm): Promise<boolean> 
     doctorName: profile.doctorName,
     title: profile.title,
     specialty: profile.specialty,
-    introduction: profile.introduction
+    introduction: profile.introduction,
+    avatar: profile.avatar.length > 0 ? profile.avatar : undefined,
+    department: profile.department.length > 0 ? profile.department : undefined,
+    licenseNumber: profile.licenseNumber.length > 0 ? profile.licenseNumber : undefined,
+    licenseImageUrls: profile.licenseImageUrls.length > 0 ? profile.licenseImageUrls : undefined,
+    verificationStatus: profile.verificationStatus.length > 0 ? profile.verificationStatus : undefined,
+    accepting: profile.accepting
   };
   return requestJson(buildApiUrl('/api/doctor-profile'), http.RequestMethod.POST, body)
     .then((payload: string) => {

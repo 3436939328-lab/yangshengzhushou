@@ -4,126 +4,32 @@ import { SectionTitle } from '../cards/CommonCards';
 import { EmptyStateBlock } from '../cards/EmptyStateBlock';
 import { getEmptyStateInfo } from '../../services/EmptyStateService';
 import { FamilyMemberDetail } from '../family/FamilyMemberDetail';
+import { FamilyShareSettings } from '../family/FamilyShareSettings';
 import {
   createFamilyInvitationRepository,
   FamilyInvitationRepository,
   StoredFamilyInvitation
 } from '../../services/FamilyInvitationRepository';
+import { fetchFamilyHealthSummary, FamilyMemberInfo } from '../../services/FamilyService';
+import {
+  FamilyRelationStatus,
+  FamilyRelationType,
+  ShareCategory,
+  FamilyMemberCard,
+  FamilyBloodPressureInfo,
+  FamilyBloodSugarInfo,
+  FamilyHeartRateInfo,
+  FamilySleepInfo,
+  FamilyWeightInfo,
+  FamilyInvitation
+} from '../../model/FamilyModels';
 
-/**
- * 亲人关系状态
- */
-export enum FamilyRelationStatus {
-  PENDING = 'PENDING',      // 待确认
-  ACTIVE = 'ACTIVE',        // 已确认
-  REJECTED = 'REJECTED',    // 已拒绝
-  EXPIRED = 'EXPIRED',      // 已过期
-  REMOVED = 'REMOVED'       // 已解除
-}
-
-/**
- * 亲人关系类型
- */
-export enum FamilyRelationType {
-  PARENT = 'PARENT',          // 父母
-  SPOUSE = 'SPOUSE',          // 配偶
-  CHILD = 'CHILD',            // 子女
-  SIBLING = 'SIBLING',        // 兄弟姐妹
-  OTHER = 'OTHER'             // 其他
-}
-
-/**
- * 共享类别
- */
-export enum ShareCategory {
-  BLOOD_PRESSURE = 'BLOOD_PRESSURE',
-  BLOOD_SUGAR = 'BLOOD_SUGAR',
-  HEART_RATE = 'HEART_RATE',
-  BLOOD_OXYGEN = 'BLOOD_OXYGEN',
-  TEMPERATURE = 'TEMPERATURE',
-  BODY = 'BODY',
-  SLEEP = 'SLEEP',
-  EXERCISE = 'EXERCISE',
-  WATER = 'WATER',
-  TONGUE = 'TONGUE',
-  AI_ANALYSIS = 'AI_ANALYSIS',
-  ABNORMAL_NOTIFY = 'ABNORMAL_NOTIFY'
-}
-
-interface FamilyBloodPressureInfo {
-  systolic: number;
-  diastolic: number;
-  measuredAt: string;
-  status: string;
-}
-
-interface FamilyBloodSugarInfo {
-  value: number;
-  unit: string;
-  type: string;
-  measuredAt: string;
-  status: string;
-}
-
-interface FamilyHeartRateInfo {
-  value: number;
-  unit: string;
-  measuredAt: string;
-  status: string;
-}
-
-interface FamilySleepInfo {
-  totalMinutes: number;
-  measuredAt: string;
-  source: string;
-}
-
-interface FamilyWeightInfo {
-  value: number;
-  bmi?: number;
-  measuredAt: string;
-}
+// 重新导出，保持对外接口不变
+export { FamilyRelationStatus, FamilyRelationType, ShareCategory, FamilyMemberCard, FamilyInvitation };
 
 interface RelationTypeOption {
   type: FamilyRelationType;
   label: string;
-}
-
-/**
- * 亲人健康卡数据
- */
-export interface FamilyMemberCard {
-  id: string;
-  relationId: string;
-  displayName: string;
-  relationType: FamilyRelationType;
-  relationLabel: string;
-  avatar?: string;
-  lastUpdateTime: string;
-  attentionCount: number;
-  status: FamilyRelationStatus;
-  grantedCategories: ShareCategory[];
-  historyWindowDays: number;
-  // 摘要数据
-  bloodPressure?: FamilyBloodPressureInfo;
-  bloodSugar?: FamilyBloodSugarInfo;
-  heartRate?: FamilyHeartRateInfo;
-  sleep?: FamilySleepInfo;
-  weight?: FamilyWeightInfo;
-}
-
-/**
- * 亲人邀请
- */
-export interface FamilyInvitation {
-  id: string;
-  inviterId: string;
-  inviteePhone: string;
-  relationType: FamilyRelationType;
-  relationLabel: string;
-  status: FamilyRelationStatus;
-  expiresAt: string;
-  createdAt: string;
 }
 
 @Component
@@ -142,6 +48,7 @@ export struct FamilyTab {
   @State inviteError: string = '';
   @State inviteSubmitting: boolean = false;
   @State showMemberDetail: boolean = false;
+  @State showShareSettings: boolean = false;
   @State selectedMember: FamilyMemberCard | null = null;
   @State careMessage: string = '';
   @State toastMessage: string = '';
@@ -155,7 +62,7 @@ export struct FamilyTab {
 
   private loadFamilyData(): void {
     this.isLoading = true;
-    this.members = this.getMockMembers();
+    this.members = [];
     this.loadInvitations();
   }
 
@@ -170,6 +77,7 @@ export struct FamilyTab {
     ]).then((results: StoredFamilyInvitation[][]) => {
       this.sentInvitations = results[0];
       this.receivedInvitations = results[1];
+      this.buildMembersFromInvitations(results[0], results[1]);
       this.isLoading = false;
     }).catch(() => {
       this.sentInvitations = [];
@@ -178,8 +86,128 @@ export struct FamilyTab {
     });
   }
 
-  private getMockMembers(): FamilyMemberCard[] {
-    return [];
+  private buildMembersFromInvitations(sent: StoredFamilyInvitation[], received: StoredFamilyInvitation[]): void {
+    const members: FamilyMemberCard[] = [];
+    const activeSent = sent.filter((item: StoredFamilyInvitation) => item.status === FamilyRelationStatus.ACTIVE);
+    for (const inv of activeSent) {
+      members.push({
+        id: `member_sent_${inv.id}`,
+        relationId: inv.id,
+        displayName: inv.inviteePhone,
+        relationType: inv.relationType,
+        relationLabel: inv.relationLabel,
+        lastUpdateTime: this.formatDate(inv.createdAt),
+        attentionCount: 0,
+        status: FamilyRelationStatus.ACTIVE,
+        grantedCategories: [],
+        historyWindowDays: 30,
+        healthCard: null
+      });
+    }
+    const activeReceived = received.filter((item: StoredFamilyInvitation) => item.status === FamilyRelationStatus.ACTIVE);
+    for (const inv of activeReceived) {
+      members.push({
+        id: `member_recv_${inv.id}`,
+        relationId: inv.id,
+        displayName: inv.inviterName.length > 0 ? inv.inviterName : inv.inviterPhone,
+        relationType: inv.relationType,
+        relationLabel: inv.relationLabel,
+        lastUpdateTime: this.formatDate(inv.createdAt),
+        attentionCount: 0,
+        status: FamilyRelationStatus.ACTIVE,
+        grantedCategories: [],
+        historyWindowDays: 30,
+        healthCard: null
+      });
+    }
+    this.members = members;
+    this.fetchHealthForMembers(members);
+  }
+
+  private fetchHealthForMembers(members: FamilyMemberCard[]): void {
+    for (const member of members) {
+      const phone = this.memberPhoneForFetch(member, members);
+      if (phone.length === 0) continue;
+      fetchFamilyHealthSummary(phone).then((info: FamilyMemberInfo) => {
+        const updated = this.members.map((m: FamilyMemberCard) => {
+          if (m.id === member.id) {
+            return this.applyHealthInfo(m, info);
+          }
+          return m;
+        });
+        this.members = updated;
+        if (this.selectedMember && this.selectedMember.id === member.id) {
+          const found = updated.find((m: FamilyMemberCard) => m.id === member.id);
+          if (found) {
+            this.selectedMember = found;
+          }
+        }
+      }).catch(() => {
+        // 静默失败，成员仍显示但无健康数据
+      });
+    }
+  }
+
+  private memberPhoneForFetch(member: FamilyMemberCard, _all: FamilyMemberCard[]): string {
+    // 对方手机号：sent 邀请对应 inviteePhone
+    if (member.id.indexOf('member_sent_') === 0) {
+      const inv = this.sentInvitations.find((item: StoredFamilyInvitation) => `member_sent_${item.id}` === member.id);
+      return inv ? inv.inviteePhone : '';
+    }
+    // received 邀请对应 inviterPhone
+    if (member.id.indexOf('member_recv_') === 0) {
+      const inv = this.receivedInvitations.find((item: StoredFamilyInvitation) => `member_recv_${item.id}` === member.id);
+      return inv ? inv.inviterPhone : '';
+    }
+    return '';
+  }
+
+  private applyHealthInfo(member: FamilyMemberCard, info: FamilyMemberInfo): FamilyMemberCard {
+    const card = info.healthCard;
+    const updated: FamilyMemberCard = {
+      id: member.id,
+      relationId: member.relationId,
+      displayName: info.realName.length > 0 ? info.realName : member.displayName,
+      relationType: member.relationType,
+      relationLabel: member.relationLabel,
+      avatar: member.avatar,
+      lastUpdateTime: new Date().toLocaleString(),
+      attentionCount: card ? card.attentionCount : 0,
+      status: member.status,
+      grantedCategories: member.grantedCategories,
+      historyWindowDays: member.historyWindowDays,
+      bloodPressure: card && card.bloodPressure ? {
+        systolic: card.bloodPressure.systolic,
+        diastolic: card.bloodPressure.diastolic,
+        measuredAt: card.bloodPressure.measuredAt,
+        status: card.bloodPressure.stateText
+      } : undefined,
+      bloodSugar: card && card.bloodSugar ? {
+        value: card.bloodSugar.value,
+        unit: card.bloodSugar.unit,
+        type: card.bloodSugar.typeText,
+        measuredAt: card.bloodSugar.measuredAt,
+        status: card.bloodSugar.stateText
+      } : undefined,
+      heartRate: card && card.heartRate ? {
+        value: card.heartRate.value,
+        unit: card.heartRate.unit,
+        measuredAt: card.heartRate.measuredAt,
+        status: card.heartRate.stateText
+      } : undefined,
+      sleep: card && card.sleep ? {
+        totalMinutes: card.sleep.totalMinutes,
+        measuredAt: card.sleep.measuredAt,
+        source: card.sleep.source
+      } : undefined,
+      weight: card && card.body && card.body.weightKg ? {
+        value: card.body.weightKg,
+        bmi: card.body.bmi,
+        measuredAt: card.body.measuredAt
+      } : undefined,
+      healthCard: card
+    };
+    return updated;
   }
 
   private relationTypeOptions(): RelationTypeOption[] {
@@ -355,10 +383,13 @@ export struct FamilyTab {
           Column() {
             FamilyMemberDetail({
               member: this.selectedMember,
-              healthCard: null,
+              healthCard: this.selectedMember && this.selectedMember.healthCard ? this.selectedMember.healthCard : null,
               isLoading: false,
               onBack: () => {
                 this.showMemberDetail = false;
+              },
+              onViewSettings: () => {
+                this.showShareSettings = true;
               },
               onSendCare: async (message: string): Promise<boolean> => {
                 this.careMessage = message;
@@ -373,6 +404,52 @@ export struct FamilyTab {
         }
         .width('100%')
         .height('100%')
+      }
+
+      if (this.showShareSettings && this.selectedMember !== null) {
+        Column() {
+          FamilyShareSettings({
+            member: this.selectedMember,
+            isViewMode: false,
+            onClose: () => {
+              this.showShareSettings = false;
+            },
+            onSave: async (categories: ShareCategory[], historyDays: number): Promise<boolean> => {
+              if (this.selectedMember) {
+                const updated: FamilyMemberCard = {
+                  id: this.selectedMember.id,
+                  relationId: this.selectedMember.relationId,
+                  displayName: this.selectedMember.displayName,
+                  relationType: this.selectedMember.relationType,
+                  relationLabel: this.selectedMember.relationLabel,
+                  avatar: this.selectedMember.avatar,
+                  lastUpdateTime: this.selectedMember.lastUpdateTime,
+                  attentionCount: this.selectedMember.attentionCount,
+                  status: this.selectedMember.status,
+                  grantedCategories: categories,
+                  historyWindowDays: historyDays,
+                  bloodPressure: this.selectedMember.bloodPressure,
+                  bloodSugar: this.selectedMember.bloodSugar,
+                  heartRate: this.selectedMember.heartRate,
+                  sleep: this.selectedMember.sleep,
+                  weight: this.selectedMember.weight,
+                  healthCard: this.selectedMember.healthCard
+                };
+                this.selectedMember = updated;
+                const memberIdx = this.members.findIndex((m: FamilyMemberCard) => m.id === updated.id);
+                if (memberIdx >= 0) {
+                  const newList = [...this.members];
+                  newList[memberIdx] = updated;
+                  this.members = newList;
+                }
+              }
+              return true;
+            }
+          })
+        }
+        .width('100%')
+        .height('100%')
+        .backgroundColor(Color.White)
       }
 
       if (this.careMessage.length > 0) {

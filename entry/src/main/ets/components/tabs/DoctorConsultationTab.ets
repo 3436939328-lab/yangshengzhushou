@@ -3,7 +3,8 @@ import {
   CARD_BG,
   CARD_RADIUS,
   DEEP_TEXT,
-  MUTED_TEXT
+  MUTED_TEXT,
+  WARM_ACCENT
 } from '../../theme/WellnessTheme';
 import {
   buildConsultationSaveFailureText,
@@ -15,6 +16,57 @@ import {
   sendConsultationMessage
 } from '../../services/ConsultationService';
 
+interface BloodPressureMetric {
+  systolic?: number;
+  diastolic?: number;
+  state?: string;
+  stateText?: string;
+  measuredAt?: string;
+}
+
+interface ValueMetric {
+  value?: number;
+  unit?: string;
+  type?: string;
+  typeText?: string;
+  context?: string;
+  state?: string;
+  stateText?: string;
+  measuredAt?: string;
+}
+
+interface SleepMetric {
+  totalMinutes?: number;
+  totalText?: string;
+  sleepType?: string;
+  state?: string;
+  stateText?: string;
+  measuredAt?: string;
+  source?: string;
+}
+
+interface BodyMetric {
+  weightKg?: number;
+  bmi?: number;
+  state?: string;
+  stateText?: string;
+  measuredAt?: string;
+}
+
+interface HealthSnapshotData {
+  subjectId?: string;
+  subjectName?: string;
+  generatedAt?: string;
+  attentionCount?: number;
+  urgentCount?: number;
+  missingCategories?: string[];
+  bloodPressure?: BloodPressureMetric;
+  bloodSugar?: ValueMetric;
+  heartRate?: ValueMetric;
+  sleep?: SleepMetric;
+  body?: BodyMetric;
+}
+
 @Component
 export struct DoctorConsultationTab {
   @Prop doctorId: string;
@@ -25,6 +77,8 @@ export struct DoctorConsultationTab {
   @State selectedConsultationId: string = '';
   @State draftMessage: string = '';
   @State feedback: string = '';
+  @State parsedSnapshot: HealthSnapshotData | null = null;
+  @State listExpanded: boolean = false;
   private messageScroller: Scroller = new Scroller();
 
   aboutToAppear() {
@@ -73,15 +127,28 @@ export struct DoctorConsultationTab {
   @Builder
   ThreadList() {
     Column({ space: 10 }) {
-      Text('问诊列表')
-        .fontSize(17)
-        .fontWeight(FontWeight.Bold)
-        .fontColor(DEEP_TEXT)
+      Row() {
+        Text('问诊列表')
+          .fontSize(17)
+          .fontWeight(FontWeight.Bold)
+          .fontColor(DEEP_TEXT)
+          .layoutWeight(1)
+        if (this.consultations.length > 0) {
+          Text(this.listExpanded ? '收起 ▲' : `展开 ▼ ${this.consultations.length} 条`)
+            .fontSize(12)
+            .fontColor(BRAND_GREEN)
+            .onClick(() => {
+              this.listExpanded = !this.listExpanded;
+            })
+        }
+      }
+      .width('100%')
+
       if (this.consultations.length === 0) {
         Text('没有用户向你提问。')
           .fontSize(13)
           .fontColor(MUTED_TEXT)
-      } else {
+      } else if (this.listExpanded) {
         ForEach(this.consultations, (thread: ConsultationThread) => {
           Column() {
             Row() {
@@ -107,9 +174,15 @@ export struct DoctorConsultationTab {
           .borderRadius(CARD_RADIUS)
           .onClick(() => {
             this.selectedConsultationId = thread.id;
+            this.parsedSnapshot = this.healthSnapshot();
             this.loadMessages(thread.id);
+            this.listExpanded = false;
           })
         }, (thread: ConsultationThread) => thread.id)
+      } else {
+        Text(`当前共 ${this.consultations.length} 条问诊记录，点击右上角展开查看`)
+          .fontSize(12)
+          .fontColor(MUTED_TEXT)
       }
     }
     .width('100%')
@@ -267,46 +340,72 @@ export struct DoctorConsultationTab {
         Text('近期健康指标')
           .fontSize(12)
           .fontColor(MUTED_TEXT)
-        Row({ space: 12 }) {
-          this.HealthInfoItem('血压', '142/88')
-          this.HealthInfoItem('血糖', '7.2')
-          this.HealthInfoItem('心率', '76')
+        if (this.parsedSnapshot) {
+          Column({ space: 8 }) {
+            Row({ space: 12 }) {
+              this.HealthInfoItem('血压', this.bloodPressureText())
+              this.HealthInfoItem('血糖', this.bloodSugarText())
+              this.HealthInfoItem('心率', this.heartRateText())
+            }
+            .width('100%')
+            Row({ space: 12 }) {
+              this.HealthInfoItem('睡眠', this.sleepText())
+              this.HealthInfoItem('体重', this.bodyText())
+            }
+            .width('100%')
+            if (this.parsedSnapshot.attentionCount && this.parsedSnapshot.attentionCount > 0) {
+              Text(`共 ${this.parsedSnapshot.attentionCount} 项指标需关注`)
+                .fontSize(12)
+                .fontColor(WARM_ACCENT)
+                .width('100%')
+            }
+          }
+          .width('100%')
+        } else {
+          Text('用户未共享健康指标数据')
+            .fontSize(12)
+            .fontColor(MUTED_TEXT)
         }
-        .width('100%')
       }
       .width('100%')
       .padding({ top: 8 })
 
       // 舌象照片
-      Row({ space: 12 }) {
-        Column({ space: 6 }) {
-          Text('舌象照片')
-            .fontSize(12)
-            .fontColor(MUTED_TEXT)
-          Column() {
-            Text('👅')
-              .fontSize(32)
+      Column({ space: 6 }) {
+        Text('舌象照片')
+          .fontSize(12)
+          .fontColor(MUTED_TEXT)
+        if (this.tongueImageUrlList().length > 0) {
+          Row({ space: 10 }) {
+            ForEach(this.tongueImageUrlList(), (url: string) => {
+              Image(url)
+                .width(70)
+                .height(70)
+                .borderRadius(CARD_RADIUS)
+                .objectFit(ImageFit.Cover)
+            }, (url: string) => url)
           }
-          .width(60)
-          .height(60)
-          .backgroundColor('#F5F5F5')
-          .borderRadius(CARD_RADIUS)
-          .justifyContent(FlexAlign.Center)
-          .alignItems(HorizontalAlign.Center)
-        }
-        .alignItems(HorizontalAlign.Start)
+          .width('100%')
+        } else {
+          Row({ space: 12 }) {
+            Column() {
+              Text('👅')
+                .fontSize(32)
+            }
+            .width(60)
+            .height(60)
+            .backgroundColor('#F5F5F5')
+            .borderRadius(CARD_RADIUS)
+            .justifyContent(FlexAlign.Center)
+            .alignItems(HorizontalAlign.Center)
 
-        Column({ space: 4 }) {
-          Text('舌象观察')
-            .fontSize(12)
-            .fontColor(MUTED_TEXT)
-          Text('舌质淡红，苔薄白，舌边有齿痕')
-            .fontSize(13)
-            .fontColor(DEEP_TEXT)
-            .maxLines(2)
+            Text('本次未分享舌象照片')
+              .fontSize(13)
+              .fontColor(MUTED_TEXT)
+              .layoutWeight(1)
+          }
+          .width('100%')
         }
-        .layoutWeight(1)
-        .alignItems(HorizontalAlign.Start)
       }
       .width('100%')
       .padding({ top: 8 })
@@ -372,6 +471,7 @@ export struct DoctorConsultationTab {
       this.consultations = items;
       if (this.selectedConsultationId.length === 0 && items.length > 0) {
         this.selectedConsultationId = items[0].id;
+        this.parsedSnapshot = this.healthSnapshot();
         this.loadMessages(items[0].id);
       }
     }).catch(() => {
@@ -470,6 +570,79 @@ export struct DoctorConsultationTab {
 
   private hasSharedPhone(): boolean {
     return this.sharedPhone().length > 0;
+  }
+
+  private healthSnapshot(): HealthSnapshotData | null {
+    const thread = this.selectedConsultation();
+    if (!thread || !thread.healthSnapshot || thread.healthSnapshot.length === 0) {
+      return null;
+    }
+    try {
+      return JSON.parse(thread.healthSnapshot) as HealthSnapshotData;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  private tongueImageUrlList(): string[] {
+    const thread = this.selectedConsultation();
+    if (!thread || !thread.tongueImageUrls || thread.tongueImageUrls.length === 0) {
+      return [];
+    }
+    return thread.tongueImageUrls.split(',').filter((url: string) => url.trim().length > 0);
+  }
+
+  private bloodPressureText(): string {
+    if (!this.parsedSnapshot || !this.parsedSnapshot.bloodPressure) return '未共享';
+    const bp = this.parsedSnapshot.bloodPressure;
+    if (bp.systolic === undefined || bp.systolic === null || bp.diastolic === undefined || bp.diastolic === null) {
+      return bp.stateText ? bp.stateText : '未共享';
+    }
+    const text = `${bp.systolic}/${bp.diastolic}`;
+    return bp.stateText && bp.stateText.length > 0 ? `${text} (${bp.stateText})` : text;
+  }
+
+  private bloodSugarText(): string {
+    if (!this.parsedSnapshot || !this.parsedSnapshot.bloodSugar) return '未共享';
+    const bs = this.parsedSnapshot.bloodSugar;
+    if (bs.value === undefined || bs.value === null) return '未共享';
+    const valueText = `${bs.value}`;
+    const unitText = bs.unit ? ` ${bs.unit}` : '';
+    const typeText = bs.typeText && bs.typeText.length > 0 ? ` (${bs.typeText})` : '';
+    return `${valueText}${unitText}${typeText}`;
+  }
+
+  private heartRateText(): string {
+    if (!this.parsedSnapshot || !this.parsedSnapshot.heartRate) return '未共享';
+    const hr = this.parsedSnapshot.heartRate;
+    if (hr.value === undefined || hr.value === null) return '未共享';
+    const valueText = `${hr.value}`;
+    const unitText = hr.unit ? ` ${hr.unit}` : '';
+    return `${valueText}${unitText}`;
+  }
+
+  private sleepText(): string {
+    if (!this.parsedSnapshot || !this.parsedSnapshot.sleep) return '未共享';
+    const sl = this.parsedSnapshot.sleep;
+    if (sl.totalText && sl.totalText.length > 0) {
+      return sl.stateText && sl.stateText.length > 0 ? `${sl.totalText} (${sl.stateText})` : sl.totalText;
+    }
+    if (sl.totalMinutes !== undefined && sl.totalMinutes !== null) {
+      const hours = Math.floor(sl.totalMinutes / 60);
+      const minutes = sl.totalMinutes % 60;
+      const text = hours > 0 ? `${hours}小时${minutes > 0 ? minutes + '分钟' : ''}` : `${minutes}分钟`;
+      return sl.stateText && sl.stateText.length > 0 ? `${text} (${sl.stateText})` : text;
+    }
+    return '未共享';
+  }
+
+  private bodyText(): string {
+    if (!this.parsedSnapshot || !this.parsedSnapshot.body) return '未共享';
+    const bd = this.parsedSnapshot.body;
+    if (bd.weightKg === undefined || bd.weightKg === null) return '未共享';
+    const weightText = `${bd.weightKg}kg`;
+    const bmiText = bd.bmi !== undefined && bd.bmi !== null ? ` (BMI ${bd.bmi})` : '';
+    return `${weightText}${bmiText}`;
   }
 
   private scrollMessagesToBottom(): void {

@@ -51,7 +51,9 @@ public class ConsultationSchemaInitializer implements CommandLineRunner {
                 new ColumnStatement("shared_name", "ALTER TABLE consultation ADD COLUMN shared_name VARCHAR(100) NULL AFTER create_time"),
                 new ColumnStatement("shared_age", "ALTER TABLE consultation ADD COLUMN shared_age INT NULL AFTER shared_name"),
                 new ColumnStatement("shared_gender", "ALTER TABLE consultation ADD COLUMN shared_gender VARCHAR(20) NULL AFTER shared_age"),
-                new ColumnStatement("shared_phone", "ALTER TABLE consultation ADD COLUMN shared_phone VARCHAR(50) NULL AFTER shared_gender")
+                new ColumnStatement("shared_phone", "ALTER TABLE consultation ADD COLUMN shared_phone VARCHAR(50) NULL AFTER shared_gender"),
+                new ColumnStatement("health_snapshot", "ALTER TABLE consultation ADD COLUMN health_snapshot TEXT NULL AFTER shared_phone"),
+                new ColumnStatement("tongue_image_urls", "ALTER TABLE consultation ADD COLUMN tongue_image_urls VARCHAR(2000) NULL AFTER health_snapshot")
         );
     }
 

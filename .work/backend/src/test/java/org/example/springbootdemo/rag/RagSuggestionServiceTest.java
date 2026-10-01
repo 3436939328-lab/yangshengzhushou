@@ -2,6 +2,7 @@ package org.example.springbootdemo.rag;
 
 import org.example.springbootdemo.ai.AssistantSuggestionReply;
 import org.example.springbootdemo.ai.AssistantSuggestionRequest;
+import org.example.springbootdemo.ai.NodeAssistantOrchestrationClient;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -24,7 +25,8 @@ class RagSuggestionServiceTest {
         RagSuggestionPromptBuilder promptBuilder = mock(RagSuggestionPromptBuilder.class);
         LocalLlmClient llmClient = mock(LocalLlmClient.class);
         RagRetrievalLogService logService = mock(RagRetrievalLogService.class);
-        RagSuggestionService service = new RagSuggestionService(retrievalService, vectorClient, promptBuilder, llmClient, logService);
+        NodeAssistantOrchestrationClient nodeClient = mock(NodeAssistantOrchestrationClient.class);
+        RagSuggestionService service = new RagSuggestionService(retrievalService, vectorClient, promptBuilder, llmClient, logService, nodeClient);
         AssistantSuggestionRequest request = new AssistantSuggestionRequest(
                 "home",
                 Map.of("city", "杭州", "humidity", "78%"),
@@ -61,13 +63,15 @@ class RagSuggestionServiceTest {
         RagSuggestionPromptBuilder promptBuilder = mock(RagSuggestionPromptBuilder.class);
         LocalLlmClient llmClient = mock(LocalLlmClient.class);
         RagRetrievalLogService logService = mock(RagRetrievalLogService.class);
-        RagSuggestionService service = new RagSuggestionService(retrievalService, vectorClient, promptBuilder, llmClient, logService);
+        NodeAssistantOrchestrationClient nodeClient = mock(NodeAssistantOrchestrationClient.class);
+        RagSuggestionService service = new RagSuggestionService(retrievalService, vectorClient, promptBuilder, llmClient, logService, nodeClient);
         AssistantSuggestionRequest request = new AssistantSuggestionRequest("home", Map.of(), Map.of());
         when(retrievalService.buildQueryText(request)).thenReturn("home");
         when(retrievalService.retrieve(request)).thenReturn(List.of());
         when(vectorClient.search("home")).thenReturn(List.of());
         when(promptBuilder.build(request, List.of())).thenReturn("prompt");
         when(llmClient.generate("prompt")).thenThrow(new IllegalStateException("connection refused"));
+        when(nodeClient.suggest(request)).thenThrow(new IllegalStateException("node unavailable"));
 
         assertThrows(RagSuggestionUnavailableException.class, () -> service.suggest(request));
     }
@@ -79,7 +83,8 @@ class RagSuggestionServiceTest {
         RagSuggestionPromptBuilder promptBuilder = mock(RagSuggestionPromptBuilder.class);
         LocalLlmClient llmClient = mock(LocalLlmClient.class);
         RagRetrievalLogService logService = mock(RagRetrievalLogService.class);
-        RagSuggestionService service = new RagSuggestionService(retrievalService, vectorClient, promptBuilder, llmClient, logService);
+        NodeAssistantOrchestrationClient nodeClient = mock(NodeAssistantOrchestrationClient.class);
+        RagSuggestionService service = new RagSuggestionService(retrievalService, vectorClient, promptBuilder, llmClient, logService, nodeClient);
         AssistantSuggestionRequest request = new AssistantSuggestionRequest("home", Map.of(), Map.of());
         when(retrievalService.buildQueryText(request)).thenReturn("home");
         when(retrievalService.retrieve(request)).thenReturn(List.of());
