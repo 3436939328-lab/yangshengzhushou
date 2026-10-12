@@ -30,8 +30,12 @@ export struct AdminPeopleTab {
   @State username: string = '';
   @State realName: string = '';
   @State phone: string = '';
-  @State newPassword: string = '123456';
+  @State newPassword: string = '';
   @State newRoleCode: string = 'USER';
+  @State keyword: string = '';
+  @State isLoadingUsers: boolean = false;
+  @State loadError: string = '';
+  private searchTimer: number = -1;
   @State feedback: string = '';
   @State roles: AdminRoleItem[] = [];
   @State userRoles: AdminUserRoleItem[] = [];
@@ -89,7 +93,7 @@ export struct AdminPeopleTab {
           this.phone = value;
         })
       if (this.selectedUserId.length === 0) {
-        TextInput({ placeholder: '初始密码，默认 123456', text: this.newPassword })
+        TextInput({ placeholder: '初始密码（请填写）', text: this.newPassword })
           .height(42)
           .fontSize(14)
           .type(InputType.Password)
@@ -219,6 +223,18 @@ export struct AdminPeopleTab {
         .fontSize(17)
         .fontWeight(FontWeight.Bold)
         .fontColor(DEEP_TEXT)
+      TextInput({ placeholder: '搜索昵称或账号编号', text: this.keyword })
+        .height(42)
+        .fontSize(14)
+        .onChange((value: string) => {
+          this.keyword = value;
+          if (this.searchTimer >= 0) {
+            clearTimeout(this.searchTimer);
+          }
+          this.searchTimer = setTimeout(() => {
+            this.applyFilter();
+          }, 300);
+        })
       Flex({ wrap: FlexWrap.Wrap }) {
         this.FilterChip('全部', 'ALL')
         this.FilterChip('普通用户', 'USER')
@@ -253,6 +269,28 @@ export struct AdminPeopleTab {
         .fontSize(17)
         .fontWeight(FontWeight.Bold)
         .fontColor(DEEP_TEXT)
+      if (this.isLoadingUsers) {
+        Text('正在加载人员数据...')
+          .fontSize(13)
+          .fontColor(MUTED_TEXT)
+      }
+      if (this.loadError.length > 0) {
+        Row({ space: 10 }) {
+          Text(this.loadError)
+            .fontSize(13)
+            .fontColor(WARM_ACCENT)
+            .layoutWeight(1)
+          Button('重试')
+            .fontSize(12)
+            .fontColor(BRAND_GREEN)
+            .backgroundColor('#EEF7F1')
+            .borderRadius(12)
+            .onClick(() => {
+              this.refreshUsers();
+            })
+        }
+        .width('100%')
+      }
       if (this.visibleUsers.length === 0) {
         Text('当前筛选条件下暂无人员数据。')
           .fontSize(13)
@@ -266,7 +304,7 @@ export struct AdminPeopleTab {
                   .fontSize(15)
                   .fontWeight(FontWeight.Bold)
                   .fontColor(DEEP_TEXT)
-                Text(`${user.phone} · ${user.statusText}`)
+                Text(`${this.maskPhone(user.phone)} · ${user.statusText}`)
                   .fontSize(12)
                   .fontColor(MUTED_TEXT)
               }
@@ -306,14 +344,29 @@ export struct AdminPeopleTab {
     .borderRadius(CARD_RADIUS)
   }
 
+  /**
+   * 手机号脱敏:保留前3位和后4位,中间用 **** 替换。
+   * 列表展示用脱敏值,编辑表单仍保留原始手机号以便修改。
+   */
+  private maskPhone(phone: string): string {
+    if (phone.length < 7) {
+      return phone.length > 0 ? phone.replace(phone.slice(1), '****') : '****';
+    }
+    return phone.substring(0, 3) + '****' + phone.substring(phone.length - 4);
+  }
+
   private refreshUsers(): void {
+    this.isLoadingUsers = true;
+    this.loadError = '';
     fetchAdminUsers().then((items: AdminUserItem[]) => {
       this.users = items;
       this.applyFilter();
     }).catch((error: Error) => {
       this.users = [];
       this.applyFilter();
-      this.feedback = error.message.length > 0 ? error.message : '人员数据加载失败。';
+      this.loadError = error.message.length > 0 ? error.message : '人员数据加载失败。';
+    }).finally(() => {
+      this.isLoadingUsers = false;
     });
   }
 
@@ -347,7 +400,7 @@ export struct AdminPeopleTab {
     this.username = '';
     this.realName = '';
     this.phone = '';
-    this.newPassword = '123456';
+    this.newPassword = '';
     this.newRoleCode = 'USER';
     this.feedback = '';
   }
@@ -364,6 +417,10 @@ export struct AdminPeopleTab {
     }
     if (this.username.trim().length === 0) {
       this.feedback = '请填写用户名。';
+      return;
+    }
+    if (this.newPassword.trim().length === 0) {
+      this.feedback = '请填写初始密码，不再使用默认 123456。';
       return;
     }
     createAdminUser(
@@ -453,7 +510,7 @@ export struct AdminPeopleTab {
   }
 
   private applyFilter(): void {
-    this.visibleUsers = buildFilteredAdminUsers(this.users, this.roles, this.userRoles, this.currentFilter);
+    this.visibleUsers = buildFilteredAdminUsers(this.users, this.roles, this.userRoles, this.currentFilter, this.keyword);
   }
 
   private userRoleSummary(userId: string): string {

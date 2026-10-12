@@ -10,6 +10,7 @@ const AUTH_SESSION_KEY: string = 'auth_session';
 export interface AuthUser {
   id: string;
   phone: string;
+  realName: string;
   createdAt: string;
   roles: string[];
   primaryRole: string;
@@ -55,6 +56,7 @@ export interface PasswordResetRequestPayload {
 interface BackendAuthUserPayload {
   id?: string | number;
   phone?: string;
+  realName?: string;
   createdAt?: string;
   createTime?: string;
   roles?: string[];
@@ -86,7 +88,6 @@ interface SpringBootCurrentUserPayload {
 interface BackendAuthActionDataPayload {
   devCode?: string;
   phone?: string;
-  rawPhone?: string;
 }
 
 interface SpringBootAuthActionPayload {
@@ -204,11 +205,9 @@ function parseAuthActionPayload(payload: string): SpringBootAuthActionPayload {
 
 export function buildSmsCodeResultFromBackendPayload(payload: string): SmsCodeResult {
   const raw = parseAuthActionPayload(payload);
-  const emptyData: BackendAuthActionDataPayload = {};
-  const data: BackendAuthActionDataPayload = raw.data ? raw.data : emptyData;
   return {
     message: raw.message ? raw.message : '',
-    devCode: data.devCode ? data.devCode : ''
+    devCode: ''
   };
 }
 
@@ -216,11 +215,11 @@ export function buildPasswordResetTargetFromBackendPayload(payload: string): Pas
   const raw = parseAuthActionPayload(payload);
   const emptyData: BackendAuthActionDataPayload = {};
   const data: BackendAuthActionDataPayload = raw.data ? raw.data : emptyData;
-  if (!data.rawPhone && !data.phone) {
+  if (!data.phone) {
     throw new Error(raw.message ? raw.message : 'AUTH_RESPONSE_INVALID');
   }
   return {
-    phone: data.rawPhone ? data.rawPhone : data.phone ? data.phone : '',
+    phone: data.phone ? data.phone : '',
     maskedPhone: data.phone ? data.phone : ''
   };
 }
@@ -273,6 +272,14 @@ export function buildAuthorizedJsonHeaders(): Record<string, string> {
   return headers;
 }
 
+export function buildAuthorizedHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {};
+  if (runtimeAuthToken.length > 0) {
+    headers['Authorization'] = `Bearer ${runtimeAuthToken}`;
+  }
+  return headers;
+}
+
 function buildBearerHeaders(token: string): Record<string, string> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json'
@@ -289,7 +296,20 @@ export function isValidPhone(phone: string): boolean {
 }
 
 export function isValidPassword(password: string): boolean {
-  return password.length >= 6 && password.length <= 64;
+  if (password.length < 6 || password.length > 64) {
+    return false;
+  }
+  let hasLetter = false;
+  let hasDigit = false;
+  for (let i = 0; i < password.length; i++) {
+    const ch = password.charAt(i);
+    if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')) {
+      hasLetter = true;
+    } else if (ch >= '0' && ch <= '9') {
+      hasDigit = true;
+    }
+  }
+  return hasLetter && hasDigit;
 }
 
 export function serializeAuthSession(session: AuthSession): string {
@@ -313,6 +333,9 @@ export function deserializeAuthSession(value: string): AuthSession | null {
       }
       parsed.user.roles = normalizeRoleList(parsed.user.roles);
       parsed.user.primaryRole = parsed.user.primaryRole ? resolvePrimaryRole([parsed.user.primaryRole]) : resolvePrimaryRole(parsed.user.roles);
+      if (!parsed.user.realName) {
+        parsed.user.realName = '';
+      }
       return parsed;
     }
   } catch (error) {
@@ -333,6 +356,7 @@ export function buildAuthSessionFromBackendPayload(payload: string): AuthSession
   const user: AuthUser = {
     id: `${data.user.id}`,
     phone: data.user.phone,
+    realName: data.user.realName ? data.user.realName : '',
     createdAt,
     roles,
     primaryRole: resolvePrimaryRole(roles)
@@ -354,6 +378,7 @@ function buildAuthUserFromBackendPayload(userPayload: BackendAuthUserPayload): A
   const user: AuthUser = {
     id: `${userPayload.id}`,
     phone: userPayload.phone,
+    realName: userPayload.realName ? userPayload.realName : '',
     createdAt,
     roles,
     primaryRole: resolvePrimaryRole(roles)

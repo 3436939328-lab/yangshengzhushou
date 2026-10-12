@@ -43,20 +43,21 @@ export function getRoleTabs(primaryRole: string): RoleTabItem[] {
   const role = normalizeRoleCode(primaryRole);
   if (role === 'ADMIN') {
     return [
-      { key: 'adminOverview', label: '总览' },
-      { key: 'adminPeople', label: '人员' },
+      { key: 'adminOverview', label: '概览' },
+      { key: 'adminPeople', label: '用户' },
       { key: 'adminDoctorReview', label: '医生审核' },
       { key: 'adminConsultations', label: '问诊' },
-      { key: 'profile', label: '我的' }
+      { key: 'adminComplaints', label: '投诉' },
+      { key: 'profile', label: '管理' }
     ];
   }
   if (role === 'DOCTOR') {
     return [
       { key: 'doctorWorkbench', label: '工作台' },
       { key: 'doctorConsultation', label: '问诊' },
+      { key: 'doctorPatient', label: '患者' },
       { key: 'assistant', label: '助手' },
-      { key: 'doctorProfile', label: '资料' },
-      { key: 'profile', label: '我的' }
+      { key: 'doctorMe', label: '我的' }
     ];
   }
   return [

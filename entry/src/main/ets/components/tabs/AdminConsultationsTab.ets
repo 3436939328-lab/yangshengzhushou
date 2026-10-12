@@ -24,6 +24,9 @@ export struct AdminConsultationsTab {
   @State totalConsultationCount: number = 0;
   @State ongoingConsultationCount: number = 0;
   @State repliedConsultationCount: number = 0;
+  @State showConversation: boolean = false;
+  @State isLoadingConsultations: boolean = false;
+  @State loadError: string = '';
 
   aboutToAppear() {
     this.refreshConsultations();
@@ -35,7 +38,7 @@ export struct AdminConsultationsTab {
         .fontSize(24)
         .fontWeight(FontWeight.Bold)
         .fontColor(DEEP_TEXT)
-      Text('管理员查看全部一对一问诊，并打开某条记录查看双方对话。')
+      Text('管理员查看全部一对一问诊汇总，完整对话需点击展开。')
         .fontSize(14)
         .fontColor(MUTED_TEXT)
         .lineHeight(22)
@@ -64,13 +67,30 @@ export struct AdminConsultationsTab {
             })
         }
 
-        if (this.feedback.length > 0) {
-          Text(this.feedback)
-            .fontSize(12)
-            .fontColor(WARM_ACCENT)
+        if (this.isLoadingConsultations) {
+          Text('正在加载问诊数据...')
+            .fontSize(13)
+            .fontColor(MUTED_TEXT)
+        }
+        if (this.loadError.length > 0) {
+          Row({ space: 10 }) {
+            Text(this.loadError)
+              .fontSize(13)
+              .fontColor(WARM_ACCENT)
+              .layoutWeight(1)
+            Button('重试')
+              .fontSize(12)
+              .fontColor(BRAND_GREEN)
+              .backgroundColor('#EEF7F1')
+              .borderRadius(12)
+              .onClick(() => {
+                this.refreshConsultations();
+              })
+          }
+          .width('100%')
         }
 
-        if (this.consultations.length === 0) {
+        if (this.consultations.length === 0 && !this.isLoadingConsultations && this.loadError.length === 0) {
           Text('暂无一对一问诊记录。')
             .fontSize(13)
             .fontColor(MUTED_TEXT)
@@ -125,7 +145,7 @@ export struct AdminConsultationsTab {
           .fontColor(DEEP_TEXT)
 
         if (this.selectedConsultationId.length === 0) {
-          Text('选择一条问诊后查看对话。')
+          Text('选择一条问诊后查看摘要。')
             .fontSize(13)
             .fontColor(MUTED_TEXT)
         } else {
@@ -139,9 +159,25 @@ export struct AdminConsultationsTab {
               .fontSize(13)
               .fontColor(MUTED_TEXT)
           } else {
-            ForEach(this.messages, (message: ConsultationMessageItem) => {
-              this.MessageBubble(message)
-            }, (message: ConsultationMessageItem) => message.id)
+            Button(this.showConversation ? '收起对话' : '查看完整对话')
+              .fontSize(12)
+              .fontColor(BRAND_GREEN)
+              .backgroundColor('#EEF7F1')
+              .borderRadius(12)
+              .margin({ top: 4, bottom: 4 })
+              .onClick(() => {
+                this.showConversation = !this.showConversation;
+              })
+            if (this.showConversation) {
+              ForEach(this.messages, (message: ConsultationMessageItem) => {
+                this.MessageBubble(message)
+              }, (message: ConsultationMessageItem) => message.id)
+            } else {
+              Text('为保护用户隐私，完整对话默认收起，点击上方按钮展开。')
+                .fontSize(11)
+                .fontColor(MUTED_TEXT)
+                .lineHeight(18)
+            }
           }
         }
       }
@@ -178,6 +214,8 @@ export struct AdminConsultationsTab {
   }
 
   private refreshConsultations(): void {
+    this.isLoadingConsultations = true;
+    this.loadError = '';
     fetchAdminConsultations().then((items: ConsultationThread[]) => {
       this.consultations = items;
       this.recalculateMetrics();
@@ -190,11 +228,15 @@ export struct AdminConsultationsTab {
       this.consultations = [];
       this.messages = [];
       this.recalculateMetrics();
-      this.feedback = error.message.length > 0 ? error.message : '问诊记录暂时加载失败。';
+      this.feedback = '';
+      this.loadError = error.message.length > 0 ? error.message : '问诊记录暂时加载失败。';
+    }).finally(() => {
+      this.isLoadingConsultations = false;
     });
   }
 
   private loadMessages(consultationId: string): void {
+    this.showConversation = false;
     fetchConsultationMessages(consultationId).then((items: ConsultationMessageItem[]) => {
       this.messages = items;
     }).catch(() => {

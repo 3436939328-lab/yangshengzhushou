@@ -55,6 +55,9 @@ logs/
 .work/backend-publish.json
 .trae-html-share-packages/
 .superpowers/
+.trae/
+yangshengzhushou_db/.trae/
+test_photo.png
 
 # ==================== 敏感配置（保留示例） ====================
 # 生产环境配置如含密钥请使用 .local 后缀并在此忽略

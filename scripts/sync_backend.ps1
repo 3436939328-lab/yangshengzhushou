@@ -5,15 +5,20 @@ $files = @(
     @{Path="main\java\org\example\springbootdemo\controller\FamilyController.java"},
     @{Path="main\java\org\example\springbootdemo\controller\ConsultationController.java"},
     @{Path="main\java\org\example\springbootdemo\controller\DoctorReviewController.java"},
+    @{Path="main\java\org\example\springbootdemo\controller\ComplaintController.java"},
+    @{Path="main\java\org\example\springbootdemo\controller\ComplaintAppealController.java"},
+    @{Path="main\java\org\example\springbootdemo\controller\SanctionController.java"},
     @{Path="main\java\org\example\springbootdemo\service\HealthDetailService.java"},
     @{Path="main\java\org\example\springbootdemo\service\ConsultationService.java"},
     @{Path="main\java\org\example\springbootdemo\service\DoctorReviewService.java"},
     @{Path="main\java\org\example\springbootdemo\service\DoctorProfileService.java"},
+    @{Path="main\java\org\example\springbootdemo\service\SanctionService.java"},
     @{Path="main\java\org\example\springbootdemo\bean\Consultation.java"},
     @{Path="main\java\org\example\springbootdemo\bean\DoctorReview.java"},
     @{Path="main\java\org\example\springbootdemo\bean\DoctorProfile.java"},
     @{Path="main\java\org\example\springbootdemo\dao\DoctorReviewDao.java"},
     @{Path="main\java\org\example\springbootdemo\dao\DoctorProfileDao.java"},
+    @{Path="main\java\org\example\springbootdemo\dao\DoctorSanctionDao.java"},
     @{Path="main\java\org\example\springbootdemo\config\DoctorReviewSchemaInitializer.java"},
     @{Path="main\java\org\example\springbootdemo\config\DoctorProfileSchemaInitializer.java"},
     @{Path="main\java\org\example\springbootdemo\config\DataInitializer.java"},
@@ -23,7 +28,8 @@ $files = @(
     @{Path="test\java\org\example\springbootdemo\rag\RagSuggestionServiceTest.java"},
     @{Path="main\resources\org.example.springbootdemo\ConsultationDao.xml"},
     @{Path="main\resources\org.example.springbootdemo\DoctorReviewDao.xml"},
-    @{Path="main\resources\org.example.springbootdemo\DoctorProfileDao.xml"}
+    @{Path="main\resources\org.example.springbootdemo\DoctorProfileDao.xml"},
+    @{Path="main\resources\org.example.springbootdemo\DoctorSanctionDao.xml"}
 )
 
 foreach ($file in $files) {

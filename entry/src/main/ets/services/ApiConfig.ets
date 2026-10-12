@@ -26,7 +26,7 @@ export interface ApiConfig {
   candidateAiBaseUrls: string[];
 }
 
-const DEFAULT_API_BASE_URL: string = 'http://192.168.5.46:8181';
+const DEFAULT_API_BASE_URL: string = 'http://127.0.0.1:8181';
 const DEFAULT_AI_BASE_URL: string = DEFAULT_API_BASE_URL;
 let runtimeBaseUrl: string = DEFAULT_API_BASE_URL;
 let runtimeAiBaseUrl: string = DEFAULT_AI_BASE_URL;

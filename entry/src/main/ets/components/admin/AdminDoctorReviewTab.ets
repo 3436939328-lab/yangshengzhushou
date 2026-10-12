@@ -35,6 +35,8 @@ export struct AdminDoctorReviewTab {
   @State decision: string = 'APPROVED';
   @State decisionReason: string = '';
   @State deciding: boolean = false;
+  @State loadError: string = '';
+  @State previewImageUrl: string = '';
 
   aboutToAppear() {
     this.refreshList();
@@ -42,6 +44,7 @@ export struct AdminDoctorReviewTab {
 
   private refreshList(): void {
     this.loading = true;
+    this.loadError = '';
     this.feedback = '加载中...';
     fetchAdminReviewQueue(this.statusFilter, this.page, this.pageSize).then((data: AdminReviewListData) => {
       this.items = data.items ? data.items : [];
@@ -50,7 +53,8 @@ export struct AdminDoctorReviewTab {
       this.feedback = this.items.length === 0 ? '当前没有匹配的审核记录' : '';
     }).catch((error: Error) => {
       this.loading = false;
-      this.feedback = error.message ? error.message : '加载失败';
+      this.feedback = '';
+      this.loadError = error.message ? error.message : '加载失败';
     });
   }
 
@@ -139,6 +143,9 @@ export struct AdminDoctorReviewTab {
       if (this.selectedReviewId > 0) {
         this.DetailPanel()
       }
+      if (this.previewImageUrl.length > 0) {
+        this.ImagePreviewOverlay()
+      }
     }
     .alignItems(HorizontalAlign.Start)
     .width('100%')
@@ -191,8 +198,33 @@ export struct AdminDoctorReviewTab {
       }
       .width('100%')
 
-      if (this.items.length === 0) {
-        Text(this.loading ? '加载中...' : '当前没有匹配的审核记录')
+      if (this.loading) {
+        Text('加载中...')
+          .fontSize(13)
+          .fontColor(MUTED_TEXT)
+          .width('100%')
+          .textAlign(TextAlign.Center)
+          .padding({ top: 20, bottom: 20 })
+      } else if (this.loadError.length > 0) {
+        Column({ space: 8 }) {
+          Text(this.loadError)
+            .fontSize(13)
+            .fontColor(WARM_ACCENT)
+            .textAlign(TextAlign.Center)
+          Button('重试')
+            .height(32)
+            .fontSize(12)
+            .fontColor(BRAND_GREEN)
+            .backgroundColor(CARD_BG)
+            .border({ width: 1, color: BRAND_GREEN })
+            .borderRadius(CARD_RADIUS)
+            .onClick(() => { this.refreshList(); })
+        }
+        .width('100%')
+        .alignItems(HorizontalAlign.Center)
+        .padding({ top: 20, bottom: 20 })
+      } else if (this.items.length === 0) {
+        Text('当前没有匹配的审核记录')
           .fontSize(13)
           .fontColor(MUTED_TEXT)
           .width('100%')
@@ -393,32 +425,107 @@ export struct AdminDoctorReviewTab {
   }
 
   @Builder
+  ImagePreviewOverlay() {
+    Stack() {
+      Column() {
+        Text('×')
+          .fontSize(28)
+          .fontColor(Color.White)
+          .width(40)
+          .height(40)
+          .textAlign(TextAlign.Center)
+          .position({ top: 20, right: 20 })
+          .zIndex(2)
+          .onClick(() => { this.previewImageUrl = ''; })
+      }
+      .width('100%')
+      .height('100%')
+
+      Image(this.previewImageUrl)
+        .width('90%')
+        .height('70%')
+        .objectFit(ImageFit.Contain)
+        .borderRadius(8)
+    }
+    .width('100%')
+    .height('100%')
+    .backgroundColor('rgba(0,0,0,0.9)')
+    .position({ top: 0, left: 0 })
+    .zIndex(100)
+    .onClick(() => { this.previewImageUrl = ''; })
+  }
+
+  @Builder
   ProfileSnapshot(profile: DoctorProfileSnapshot) {
-    Column({ space: 6 }) {
+    Column({ space: 10 }) {
       Text('医生资料')
-        .fontSize(14)
+        .fontSize(15)
         .fontWeight(FontWeight.Bold)
         .fontColor(DEEP_TEXT)
 
-      this.SnapshotRow('姓名', profile.doctorName ? profile.doctorName : '未填写')
-      this.SnapshotRow('职称', profile.title ? profile.title : '未填写')
-      this.SnapshotRow('科室', profile.department ? profile.department : '未填写')
-      this.SnapshotRow('擅长', profile.specialty ? profile.specialty : '未填写')
+      Row({ space: 12 }) {
+        if (profile.avatar && profile.avatar.length > 0) {
+          Image(profile.avatar)
+            .width(60)
+            .height(60)
+            .borderRadius(30)
+            .objectFit(ImageFit.Cover)
+            .onClick(() => { this.previewImageUrl = profile.avatar!; })
+        } else {
+          Column() {
+            Text('📷')
+              .fontSize(20)
+          }
+          .width(60)
+          .height(60)
+          .borderRadius(30)
+          .backgroundColor('#F5F5F5')
+          .justifyContent(FlexAlign.Center)
+        }
+
+        Column({ space: 4 }) {
+          Text(profile.doctorName ? profile.doctorName : '未填写姓名')
+            .fontSize(16)
+            .fontWeight(FontWeight.Bold)
+            .fontColor(DEEP_TEXT)
+          Text(profile.title ? profile.title : '未填写职称')
+            .fontSize(13)
+            .fontColor(BRAND_GREEN)
+          if (profile.department && profile.department.length > 0) {
+            Text(profile.department)
+              .fontSize(12)
+              .fontColor(MUTED_TEXT)
+          }
+        }
+        .layoutWeight(1)
+        .alignItems(HorizontalAlign.Start)
+      }
+      .width('100%')
+
       this.SnapshotRow('资格证号', profile.licenseNumber ? profile.licenseNumber : '未填写')
+      this.SnapshotRow('擅长方向', profile.specialty ? profile.specialty : '未填写')
+      this.SnapshotRow('服务说明', profile.introduction ? profile.introduction : '未填写')
+      this.SnapshotRow('审核状态', profile.verificationStatus ? this.statusLabel(profile.verificationStatus) : '未设置')
+      if (profile.verificationRemark && profile.verificationRemark.length > 0) {
+        this.SnapshotRow('审核备注', profile.verificationRemark)
+      }
+      this.SnapshotRow('接诊状态', profile.accepting === true ? '已开启' : '已关闭')
 
       if (profile.licenseImageUrls && profile.licenseImageUrls.length > 0) {
         Text('资格证照片')
-          .fontSize(13)
-          .fontColor(MUTED_TEXT)
+          .fontSize(14)
+          .fontColor(DEEP_TEXT)
+          .fontWeight(FontWeight.Medium)
           .margin({ top: 6 })
         Flex({ wrap: FlexWrap.Wrap }) {
-          ForEach(this.licenseImageList(profile.licenseImageUrls), (url: string) => {
+          ForEach(this.licenseImageList(profile.licenseImageUrls), (url: string, index: number) => {
             Image(url)
-              .width(64)
-              .height(64)
+              .width(100)
+              .height(100)
               .borderRadius(8)
               .objectFit(ImageFit.Cover)
-              .margin({ right: 6, bottom: 6 })
+              .margin({ right: 8, bottom: 8 })
+              .onClick(() => { this.previewImageUrl = url; })
           }, (url: string, index: number) => `${index}-${url}`)
         }
         .width('100%')
@@ -430,19 +537,18 @@ export struct AdminDoctorReviewTab {
 
   @Builder
   SnapshotRow(label: string, value: string) {
-    Row() {
+    Column({ space: 2 }) {
       Text(label)
         .fontSize(12)
         .fontColor(MUTED_TEXT)
-        .layoutWeight(1)
       Text(value)
-        .fontSize(12)
+        .fontSize(13)
         .fontColor(DEEP_TEXT)
-        .maxLines(2)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
+        .lineHeight(20)
     }
     .width('100%')
-    .padding({ top: 2, bottom: 2 })
+    .alignItems(HorizontalAlign.Start)
+    .padding({ top: 6, bottom: 6 })
   }
 
   @Builder

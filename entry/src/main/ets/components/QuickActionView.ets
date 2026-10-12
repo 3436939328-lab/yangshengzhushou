@@ -36,12 +36,7 @@ export struct QuickActionView {
         } })
       } else if (this.action === '舌象记录') {
         TongueImageView({
-          images: this.tongueImages,
-          isLoading: this.tongueLoading,
-          onBack: () => { this.onBack(); },
-          onUploadImage: (uri: string, source: 'CAMERA' | 'ALBUM') => {
-            this.feedback = `已选择照片（${source === 'CAMERA' ? '拍摄' : '相册'}），分析功能开发中`;
-          }
+          onBack: () => { this.onBack(); }
         })
         TongueNoteForm({ onSave: async (note: TongueObservationNote): Promise<boolean> => {
           try {

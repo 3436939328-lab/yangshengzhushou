@@ -5,5 +5,6 @@ export const PAGE_BG: string = '#F6F8F5';
 export const CARD_BG: string = '#FFFFFF';
 export const LINE_BG: string = '#E4EBE6';
 export const WARM_ACCENT: string = '#C7743D';
+export const DANGER_RED: string = '#E54D42';
 
 export const CARD_RADIUS: number = 8;

@@ -37,18 +37,29 @@ export function buildFilteredAdminUsers(
   users: AdminUserItem[],
   roles: AdminRoleItem[],
   userRoles: AdminUserRoleItem[],
-  filter: AdminPeopleFilter
+  filter: AdminPeopleFilter,
+  keyword: string = ''
 ): AdminUserItem[] {
+  const keywordTrim = keyword.trim().toLowerCase();
   return users.filter((user: AdminUserItem) => {
+    let roleMatch = false;
     if (filter === 'ALL') {
+      roleMatch = true;
+    } else if (filter === 'USER') {
+      roleMatch = !hasElevatedRole(userRoles, roles, user.id);
+    } else if (filter === 'DOCTOR') {
+      roleMatch = hasDoctorRole(userRoles, roles, user.id);
+    } else {
+      roleMatch = hasRawRole(userRoles, roles, user.id, filter);
+    }
+    if (!roleMatch) {
+      return false;
+    }
+    if (keywordTrim.length === 0) {
       return true;
     }
-    if (filter === 'USER') {
-      return !hasElevatedRole(userRoles, roles, user.id);
-    }
-    if (filter === 'DOCTOR') {
-      return hasDoctorRole(userRoles, roles, user.id);
-    }
-    return hasRawRole(userRoles, roles, user.id, filter);
+    return user.username.toLowerCase().indexOf(keywordTrim) >= 0
+      || user.realName.toLowerCase().indexOf(keywordTrim) >= 0
+      || user.id.indexOf(keywordTrim) >= 0;
   });
 }

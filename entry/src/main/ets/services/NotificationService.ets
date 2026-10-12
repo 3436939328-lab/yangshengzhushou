@@ -221,7 +221,7 @@ export function reconcileReminders(context: common.UIAbilityContext, userId: str
   });
 }
 
-export function sendTestReminder(context: common.UIAbilityContext): Promise<void> {
+function sendTestReminder(context: common.UIAbilityContext): Promise<void> {
   return serialize(async () => {
     await requestNotificationPermission(context);
     const records = await readRegistrations(context);

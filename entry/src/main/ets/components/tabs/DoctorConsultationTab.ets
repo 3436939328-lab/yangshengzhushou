@@ -1,20 +1,26 @@
+import { picker } from '@kit.CoreFileKit';
 import {
   BRAND_GREEN,
   CARD_BG,
   CARD_RADIUS,
   DEEP_TEXT,
   MUTED_TEXT,
-  WARM_ACCENT
+  WARM_ACCENT,
+  PAGE_BG
 } from '../../theme/WellnessTheme';
 import {
   buildConsultationSaveFailureText,
-  buildDoctorPendingNoticeTitle,
   ConsultationMessageItem,
   ConsultationThread,
+  deleteConsultationMessage,
   fetchConsultationMessages,
   fetchDoctorConsultations,
-  sendConsultationMessage
+  fetchUserHealthByConsultation,
+  recallConsultationMessage,
+  sendConsultationMessage,
+  UserHealthArchive
 } from '../../services/ConsultationService';
+import { uploadImage, UploadResult } from '../../services/AssetService';
 
 interface BloodPressureMetric {
   systolic?: number;
@@ -78,305 +84,483 @@ export struct DoctorConsultationTab {
   @State draftMessage: string = '';
   @State feedback: string = '';
   @State parsedSnapshot: HealthSnapshotData | null = null;
-  @State listExpanded: boolean = false;
+  @State userHealthArchive: UserHealthArchive | null = null;
+  @State isLoading: boolean = false;
+  @State isUploading: boolean = false;
+  @State showChat: boolean = false;
+  @State showActionMenu: boolean = false;
+  @State actionMenuMessageId: string = '';
+  @State filterStatus: string = 'all'; // all / pending / active / closed
   private messageScroller: Scroller = new Scroller();
+
+  // 按状态筛选后的问诊列表
+  private getFilteredConsultations(): ConsultationThread[] {
+    if (this.filterStatus === 'all') {
+      return this.consultations;
+    }
+    return this.consultations.filter((c: ConsultationThread) => {
+      const status = c.statusCode;
+      if (this.filterStatus === 'pending') {
+        return status === 0; // 进行中=待回复
+      }
+      if (this.filterStatus === 'active') {
+        return status === 0 || status === 1; // 进行中或已回复都算活跃
+      }
+      if (this.filterStatus === 'closed') {
+        return status === 2; // 已关闭
+      }
+      return true;
+    });
+  }
+
+  private getPendingCount(): number {
+    return this.consultations.filter((c: ConsultationThread) => c.statusCode === 0).length;
+  }
+
+  private getOngoingCount(): number {
+    return this.consultations.filter((c: ConsultationThread) => c.statusCode === 0 || c.statusCode === 1).length;
+  }
+
+  private getClosedCount(): number {
+    return this.consultations.filter((c: ConsultationThread) => c.statusCode === 2).length;
+  }
 
   aboutToAppear() {
     this.refreshConsultations();
   }
 
   build() {
-    Column({ space: 14 }) {
-      Text(this.title)
-        .fontSize(24)
-        .fontWeight(FontWeight.Bold)
-        .fontColor(DEEP_TEXT)
-      this.PendingNotice()
-      this.ThreadList()
-      this.MessagePanel()
-    }
-    .alignItems(HorizontalAlign.Start)
-    .width('100%')
-  }
-
-  @Builder
-  PendingNotice() {
-    Column() {
-      Text(buildDoctorPendingNoticeTitle(this.consultations))
-        .fontSize(17)
-        .fontWeight(FontWeight.Bold)
-        .fontColor(this.consultations.length > 0 ? BRAND_GREEN : MUTED_TEXT)
-      Text(this.consultations.length > 0 ? `共 ${this.consultations.length} 条问诊记录，请优先处理待回复内容。` : '用户向你发起问诊后，这里会首先提醒。')
-        .fontSize(13)
-        .fontColor(MUTED_TEXT)
-        .margin({ top: 6 })
-      if (this.feedback.length > 0) {
-        Text(this.feedback)
-          .fontSize(12)
-          .fontColor(this.feedback.indexOf('成功') >= 0 ? BRAND_GREEN : MUTED_TEXT)
-          .margin({ top: 8 })
-      }
-    }
-    .alignItems(HorizontalAlign.Start)
-    .width('100%')
-    .padding({ left: 18, right: 18, top: 18, bottom: 18 })
-    .backgroundColor(CARD_BG)
-    .borderRadius(CARD_RADIUS)
-  }
-
-  @Builder
-  ThreadList() {
-    Column({ space: 10 }) {
-      Row() {
-        Text('问诊列表')
-          .fontSize(17)
-          .fontWeight(FontWeight.Bold)
-          .fontColor(DEEP_TEXT)
-          .layoutWeight(1)
-        if (this.consultations.length > 0) {
-          Text(this.listExpanded ? '收起 ▲' : `展开 ▼ ${this.consultations.length} 条`)
-            .fontSize(12)
-            .fontColor(BRAND_GREEN)
-            .onClick(() => {
-              this.listExpanded = !this.listExpanded;
-            })
-        }
-      }
-      .width('100%')
-
-      if (this.consultations.length === 0) {
-        Text('没有用户向你提问。')
-          .fontSize(13)
-          .fontColor(MUTED_TEXT)
-      } else if (this.listExpanded) {
-        ForEach(this.consultations, (thread: ConsultationThread) => {
-          Column() {
-            Row() {
-              Text(thread.symptom)
-                .fontSize(15)
-                .fontWeight(FontWeight.Bold)
-                .fontColor(DEEP_TEXT)
-                .layoutWeight(1)
-              Text(thread.statusText)
-                .fontSize(12)
-                .fontColor(BRAND_GREEN)
-            }
-            Text(thread.description)
-              .fontSize(12)
-              .fontColor(MUTED_TEXT)
-              .margin({ top: 4 })
-              .maxLines(1)
-              .textOverflow({ overflow: TextOverflow.Ellipsis })
-          }
-          .width('100%')
-          .padding({ left: 14, right: 14, top: 12, bottom: 12 })
-          .backgroundColor(this.selectedConsultationId === thread.id ? '#EEF7F1' : '#FAFCFA')
-          .borderRadius(CARD_RADIUS)
-          .onClick(() => {
-            this.selectedConsultationId = thread.id;
-            this.parsedSnapshot = this.healthSnapshot();
-            this.loadMessages(thread.id);
-            this.listExpanded = false;
-          })
-        }, (thread: ConsultationThread) => thread.id)
-      } else {
-        Text(`当前共 ${this.consultations.length} 条问诊记录，点击右上角展开查看`)
-          .fontSize(12)
-          .fontColor(MUTED_TEXT)
-      }
-    }
-    .width('100%')
-    .padding({ left: 18, right: 18, top: 18, bottom: 18 })
-    .backgroundColor(CARD_BG)
-    .borderRadius(CARD_RADIUS)
-  }
-
-  @Builder
-  MessagePanel() {
-    Column({ space: 12 }) {
-      Text('对话回复')
-        .fontSize(17)
-        .fontWeight(FontWeight.Bold)
-        .fontColor(DEEP_TEXT)
-      if (this.selectedConsultationId.length === 0) {
-        Text('选择一条问诊后开始回复用户。')
-          .fontSize(13)
-          .fontColor(MUTED_TEXT)
-      } else {
-        Column({ space: 12 }) {
-          this.ConversationSummary()
-          Scroll(this.messageScroller) {
-            Column({ space: 10 }) {
-              ForEach(this.messages, (message: ConsultationMessageItem) => {
-                this.ChatBubble(message)
-              }, (message: ConsultationMessageItem) => message.id)
-            }
-            .width('100%')
-          }
-          .width('100%')
-          .height(320)
-          .scrollBar(BarState.Auto)
-
-          Row({ space: 8 }) {
-            TextInput({ placeholder: '输入给用户的回复', text: this.draftMessage })
-              .height(44)
-              .fontSize(14)
-              .layoutWeight(1)
-              .backgroundColor('#F7F7F7')
-              .borderRadius(12)
-              .onChange((value: string) => {
-                this.draftMessage = value;
-              })
-            Button('回复')
-              .height(44)
-              .fontColor('#FFFFFF')
-              .backgroundColor(BRAND_GREEN)
-              .borderRadius(12)
-              .onClick(() => {
-                this.sendMessage();
-              })
-          }
-          .width('100%')
-          .padding({ top: 10 })
-          .border({
-            width: { top: 1 },
-            color: '#E4EBE6'
-          })
-        }
-        .width('100%')
-        .padding(14)
-        .backgroundColor('#F8FBF9')
-        .borderRadius(CARD_RADIUS)
-      }
-    }
-    .width('100%')
-    .padding({ left: 18, right: 18, top: 18, bottom: 18 })
-    .backgroundColor(CARD_BG)
-    .borderRadius(CARD_RADIUS)
-  }
-
-  @Builder
-  ConversationSummary() {
-    if (this.hasSelectedConsultation()) {
-      Column({ space: 12 }) {
-        Row() {
-          Column({ space: 4 }) {
-            Text(this.selectedConsultationSymptom())
-              .fontSize(15)
-              .fontWeight(FontWeight.Bold)
-              .fontColor(DEEP_TEXT)
-            Text(this.selectedConsultationDescription())
-              .fontSize(12)
-              .fontColor(MUTED_TEXT)
-              .maxLines(2)
-              .textOverflow({ overflow: TextOverflow.Ellipsis })
-          }
-          .layoutWeight(1)
-          .alignItems(HorizontalAlign.Start)
-          Text(this.selectedConsultationStatus())
-            .fontSize(12)
-            .fontColor(BRAND_GREEN)
-        }
-        .width('100%')
-
-        // 用户健康资料卡片
-        this.UserHealthSnapshot()
-      }
-      .width('100%')
-    }
-  }
-
-  @Builder
-  UserHealthSnapshot() {
-    Column({ space: 10 }) {
-      Row({ space: 6 }) {
-        Text('📋')
-          .fontSize(14)
-        Text('用户健康资料')
-          .fontSize(14)
-          .fontWeight(FontWeight.Bold)
-          .fontColor(DEEP_TEXT)
-      }
-      .width('100%')
-
-      // 用户共享的个人信息（由用户自定义选择）
-      Column({ space: 6 }) {
-        Row({ space: 6 }) {
-          Text('👤')
-            .fontSize(14)
-          Text('用户共享信息')
-            .fontSize(14)
-            .fontWeight(FontWeight.Bold)
-            .fontColor(DEEP_TEXT)
-        }
-        .width('100%')
-
-        Row({ space: 16 }) {
-          if (this.hasSharedName()) {
-            this.HealthInfoItem('姓名', this.sharedName())
-          }
-          if (this.hasSharedGender()) {
-            this.HealthInfoItem('性别', this.sharedGender())
-          }
-          if (this.hasSharedAge()) {
-            this.HealthInfoItem('年龄', `${this.sharedAge()}`)
-          }
-          if (this.hasSharedPhone()) {
-            this.HealthInfoItem('手机号', this.sharedPhone())
-          }
-          if (!this.hasSharedName() && !this.hasSharedGender() && !this.hasSharedAge() && !this.hasSharedPhone()) {
-            Text('用户未共享个人信息')
-              .fontSize(12)
-              .fontColor(MUTED_TEXT)
-          }
-        }
-        .width('100%')
-      }
-      .width('100%')
-      .padding({ top: 8 })
-
-      // 健康指标
-      Column({ space: 6 }) {
-        Text('近期健康指标')
-          .fontSize(12)
-          .fontColor(MUTED_TEXT)
-        if (this.parsedSnapshot) {
-          Column({ space: 8 }) {
-            Row({ space: 12 }) {
-              this.HealthInfoItem('血压', this.bloodPressureText())
-              this.HealthInfoItem('血糖', this.bloodSugarText())
-              this.HealthInfoItem('心率', this.heartRateText())
-            }
-            .width('100%')
-            Row({ space: 12 }) {
-              this.HealthInfoItem('睡眠', this.sleepText())
-              this.HealthInfoItem('体重', this.bodyText())
-            }
-            .width('100%')
-            if (this.parsedSnapshot.attentionCount && this.parsedSnapshot.attentionCount > 0) {
-              Text(`共 ${this.parsedSnapshot.attentionCount} 项指标需关注`)
-                .fontSize(12)
-                .fontColor(WARM_ACCENT)
-                .width('100%')
-            }
-          }
-          .width('100%')
+    Stack() {
+      Column() {
+        if (this.showChat) {
+          this.ChatView()
         } else {
-          Text('用户未共享健康指标数据')
+          this.ConsultationListView()
+        }
+      }
+      .width('100%')
+      .height('100%')
+
+      if (this.showActionMenu) {
+        this.ActionMenuOverlay()
+      }
+    }
+    .width('100%')
+    .height('100%')
+  }
+
+  // ==================== 问诊列表页 ====================
+  @Builder
+  ConsultationListView() {
+    Column({ space: 0 }) {
+      // 顶部标题
+      Text(this.title)
+        .fontSize(22)
+        .fontWeight(FontWeight.Bold)
+        .fontColor(DEEP_TEXT)
+        .width('100%')
+        .padding({ left: 18, top: 18, bottom: 12 })
+
+      // 状态筛选 Tab
+      this.StatusFilterBar()
+
+      if (this.getFilteredConsultations().length === 0) {
+        Column({ space: 8 }) {
+          Text(this.emptyStateText())
+            .fontSize(14)
+            .fontColor(MUTED_TEXT)
+          Text('暂无此状态的问诊记录')
             .fontSize(12)
             .fontColor(MUTED_TEXT)
         }
+        .width('100%')
+        .padding({ top: 60, bottom: 60 })
+        .alignItems(HorizontalAlign.Center)
+      } else {
+        Scroll() {
+          Column({ space: 10 }) {
+            ForEach(this.getFilteredConsultations(), (thread: ConsultationThread) => {
+              this.ConsultationCardItem(thread)
+            }, (thread: ConsultationThread) => thread.id)
+          }
+          .width('100%')
+          .padding({ left: 14, right: 14, bottom: 10, top: 10 })
+        }
+        .layoutWeight(1)
+        .scrollBar(BarState.Auto)
       }
-      .width('100%')
-      .padding({ top: 8 })
+    }
+    .width('100%')
+    .height('100%')
+  }
 
-      // 舌象照片
-      Column({ space: 6 }) {
-        Text('舌象照片')
+  @Builder
+  StatusFilterBar() {
+    Row() {
+      this.FilterTab('全部', `${this.consultations.length}`, 'all')
+      this.FilterTab('待回复', `${this.getPendingCount()}`, 'pending')
+      this.FilterTab('进行中', `${this.getOngoingCount()}`, 'active')
+      this.FilterTab('已结束', `${this.getClosedCount()}`, 'closed')
+    }
+    .width('100%')
+    .padding({ left: 14, right: 14 })
+  }
+
+  @Builder
+  FilterTab(label: string, count: string, key: string) {
+    Column({ space: 6 }) {
+      Row({ space: 4 }) {
+        Text(label)
+          .fontSize(14)
+          .fontWeight(this.filterStatus === key ? FontWeight.Bold : FontWeight.Medium)
+          .fontColor(this.filterStatus === key ? BRAND_GREEN : DEEP_TEXT)
+        Text(count)
+          .fontSize(11)
+          .fontColor(this.filterStatus === key ? Color.White : MUTED_TEXT)
+          .padding({ left: 5, right: 5, top: 1, bottom: 1 })
+          .backgroundColor(this.filterStatus === key ? BRAND_GREEN : '#F0F0F0')
+          .borderRadius(8)
+      }
+      .height(28)
+
+      if (this.filterStatus === key) {
+        Column()
+          .width(20)
+          .height(3)
+          .backgroundColor(BRAND_GREEN)
+          .borderRadius(2)
+      } else {
+        Column()
+          .width(20)
+          .height(3)
+          .backgroundColor(Color.Transparent)
+      }
+    }
+    .layoutWeight(1)
+    .alignItems(HorizontalAlign.Center)
+    .padding({ top: 4, bottom: 4 })
+    .onClick(() => {
+      this.filterStatus = key;
+    })
+  }
+
+  private emptyStateText(): string {
+    switch (this.filterStatus) {
+      case 'pending': return '暂无待回复问诊';
+      case 'active': return '暂无进行中的问诊';
+      case 'closed': return '暂无已结束的问诊';
+      default: return '暂无问诊记录';
+    }
+  }
+
+  @Builder
+  ConsultationCardItem(thread: ConsultationThread) {
+    Row({ space: 12 }) {
+      // 用户头像
+      Column() {
+        Text(this.patientInitial(thread))
+          .fontSize(20)
+          .fontColor(Color.White)
+      }
+      .width(48)
+      .height(48)
+      .borderRadius(24)
+      .backgroundColor('#5BA839')
+      .justifyContent(FlexAlign.Center)
+
+      Column({ space: 5 }) {
+        Row({ space: 6 }) {
+          Text(this.patientDisplayName(thread))
+            .fontSize(15)
+            .fontWeight(FontWeight.Bold)
+            .fontColor(DEEP_TEXT)
+          Text(thread.statusText)
+            .fontSize(11)
+            .fontColor(BRAND_GREEN)
+            .padding({ left: 6, right: 6, top: 1, bottom: 1 })
+            .backgroundColor('#EEF7F1')
+            .borderRadius(8)
+        }
+        Text(thread.symptom)
+          .fontSize(13)
+          .fontColor(MUTED_TEXT)
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+        Text(thread.description)
           .fontSize(12)
           .fontColor(MUTED_TEXT)
-        if (this.tongueImageUrlList().length > 0) {
-          Row({ space: 10 }) {
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
+      .alignItems(HorizontalAlign.Start)
+      .layoutWeight(1)
+
+      Text('查看 ▶')
+        .fontSize(12)
+        .fontColor(BRAND_GREEN)
+    }
+    .width('100%')
+    .padding(14)
+    .backgroundColor(CARD_BG)
+    .borderRadius(CARD_RADIUS)
+    .onClick(() => {
+      this.selectedConsultationId = thread.id;
+      this.parsedSnapshot = this.healthSnapshot();
+      this.loadMessages(thread.id);
+      this.loadUserHealthArchive(thread.id);
+      this.showChat = true;
+    })
+  }
+
+  // ==================== 微信风格聊天页 ====================
+  @Builder
+  ChatView() {
+    Column() {
+      // 顶部导航栏
+      Row() {
+        Text('←')
+          .fontSize(20)
+          .fontColor(Color.White)
+          .onClick(() => { this.exitChat(); })
+        Text(this.chatTitle())
+          .fontSize(17)
+          .fontColor(Color.White)
+          .fontWeight(FontWeight.Medium)
+          .margin({ left: 8 })
+        Blank()
+        Text('用户资料')
+          .fontSize(12)
+          .fontColor(Color.White)
+          .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+          .border({ width: 1, color: Color.White })
+          .borderRadius(10)
+          .onClick(() => { this.showUserHealthPanel = !this.showUserHealthPanel; })
+      }
+      .width('100%')
+      .height(48)
+      .padding({ left: 16, right: 16 })
+      .backgroundColor(BRAND_GREEN)
+
+      // 用户资料卡片（可展开/收起）
+      if (this.showUserHealthPanel) {
+        this.UserHealthCard()
+      }
+
+      // 消息区域
+      Scroll(this.messageScroller) {
+        Column({ space: 12 }) {
+          ForEach(this.messages, (msg: ConsultationMessageItem) => {
+            this.ChatBubble(msg)
+          }, (msg: ConsultationMessageItem) => msg.id)
+          if (this.feedback.length > 0) {
+            Text(this.feedback)
+              .fontSize(12)
+              .fontColor(WARM_ACCENT)
+              .textAlign(TextAlign.Center)
+              .width('100%')
+              .padding({ top: 8 })
+          }
+        }
+        .width('100%')
+        .padding({ left: 14, right: 14, top: 12, bottom: 12 })
+      }
+      .layoutWeight(1)
+      .scrollBar(BarState.Auto)
+      .backgroundColor('#EDEDED')
+
+      // 底部输入栏
+      Row({ space: 8 }) {
+        Button() {
+          Text('📷')
+            .fontSize(22)
+        }
+        .width(36)
+        .height(36)
+        .backgroundColor(Color.Transparent)
+        .borderRadius(0)
+        .onClick(() => { this.pickAndSendImage(); })
+
+        TextInput({ placeholder: '', text: this.draftMessage })
+          .height(36)
+          .fontSize(15)
+          .layoutWeight(1)
+          .backgroundColor('#FFFFFF')
+          .borderRadius(6)
+          .onChange((value: string) => { this.draftMessage = value; })
+
+        Button('发送')
+          .height(36)
+          .fontSize(14)
+          .fontColor(Color.White)
+          .backgroundColor(this.draftMessage.trim().length > 0 ? BRAND_GREEN : '#CCCCCC')
+          .borderRadius(6)
+          .enabled(this.draftMessage.trim().length > 0 && !this.isLoading)
+          .onClick(() => { this.sendMessage(); })
+      }
+      .width('100%')
+      .padding({ left: 12, right: 12, top: 8, bottom: 8 })
+      .backgroundColor('#F7F7F7')
+      .border({ width: { top: 1 }, color: '#D0D0D0' })
+    }
+    .width('100%')
+    .height('100%')
+  }
+
+  // ==================== 用户健康资料卡片 ====================
+  @State showUserHealthPanel: boolean = true;
+
+  @Builder
+  UserHealthCard() {
+    Column({ space: 10 }) {
+      // 用户基本信息卡片
+      Row({ space: 12 }) {
+        Column() {
+          Text(this.patientInitial(this.selectedConsultation()!))
+            .fontSize(18)
+            .fontColor(Color.White)
+        }
+        .width(40)
+        .height(40)
+        .borderRadius(20)
+        .backgroundColor('#5BA839')
+        .justifyContent(FlexAlign.Center)
+
+        Column({ space: 3 }) {
+          Text(this.patientDisplayName(this.selectedConsultation()!))
+            .fontSize(15)
+            .fontWeight(FontWeight.Bold)
+            .fontColor(DEEP_TEXT)
+          Row({ space: 8 }) {
+            if (this.hasSharedGender()) {
+              Text(this.sharedGender())
+                .fontSize(11)
+                .fontColor(MUTED_TEXT)
+            }
+            if (this.hasSharedAge()) {
+              Text(`${this.sharedAge()}岁`)
+                .fontSize(11)
+                .fontColor(MUTED_TEXT)
+            }
+            if (this.hasSharedPhone()) {
+              Text(this.sharedPhone())
+                .fontSize(11)
+                .fontColor(MUTED_TEXT)
+            }
+          }
+        }
+        .alignItems(HorizontalAlign.Start)
+        .layoutWeight(1)
+
+        Text(this.selectedConsultationStatus())
+          .fontSize(11)
+          .fontColor(BRAND_GREEN)
+      }
+      .width('100%')
+      .padding({ left: 14, right: 14, top: 10, bottom: 10 })
+      .backgroundColor('#EEF7F1')
+      .borderRadius(CARD_RADIUS)
+
+      // 健康指标快照
+      if (this.parsedSnapshot) {
+        Column({ space: 6 }) {
+          Row() {
+            Column()
+              .width(3)
+              .height(12)
+              .backgroundColor(BRAND_GREEN)
+              .borderRadius(2)
+            Text('近期健康指标')
+              .fontSize(12)
+              .fontWeight(FontWeight.Bold)
+              .fontColor(DEEP_TEXT)
+              .margin({ left: 5 })
+          }
+          .width('100%')
+
+          Flex({ wrap: FlexWrap.Wrap }) {
+            this.HealthTag('血压', this.bloodPressureText())
+            this.HealthTag('血糖', this.bloodSugarText())
+            this.HealthTag('心率', this.heartRateText())
+            this.HealthTag('睡眠', this.sleepText())
+            this.HealthTag('体重', this.bodyText())
+          }
+          .width('100%')
+
+          if (this.parsedSnapshot.attentionCount && this.parsedSnapshot.attentionCount > 0) {
+            Text(`⚠ 共 ${this.parsedSnapshot.attentionCount} 项指标需关注`)
+              .fontSize(11)
+              .fontColor(WARM_ACCENT)
+              .width('100%')
+          }
+        }
+        .width('100%')
+        .padding({ left: 14, right: 14, top: 8, bottom: 8 })
+      }
+
+      // 健康档案
+      if (this.userHealthArchive) {
+        Column({ space: 6 }) {
+          Row() {
+            Column()
+              .width(3)
+              .height(12)
+              .backgroundColor(BRAND_GREEN)
+              .borderRadius(2)
+            Text('健康档案')
+              .fontSize(12)
+              .fontWeight(FontWeight.Bold)
+              .fontColor(DEEP_TEXT)
+              .margin({ left: 5 })
+          }
+          .width('100%')
+
+          Flex({ wrap: FlexWrap.Wrap }) {
+            if (this.userHealthArchive.height > 0) {
+              this.HealthTag('身高', `${this.userHealthArchive.height}cm`)
+            }
+            if (this.userHealthArchive.weight > 0) {
+              this.HealthTag('体重', `${this.userHealthArchive.weight}kg`)
+            }
+            if (this.userHealthArchive.height > 0 && this.userHealthArchive.weight > 0) {
+              this.HealthTag('BMI', this.bmiText(this.userHealthArchive.height, this.userHealthArchive.weight))
+            }
+            if (this.userHealthArchive.constitutionType.length > 0) {
+              this.HealthTag('体质', this.userHealthArchive.constitutionType)
+            }
+            if (this.userHealthArchive.allergyHistory.length > 0) {
+              this.HealthTag('过敏史', this.userHealthArchive.allergyHistory)
+            }
+            if (this.userHealthArchive.medicalHistory.length > 0) {
+              this.HealthTag('病史', this.userHealthArchive.medicalHistory)
+            }
+            if (this.userHealthArchive.healthGoal.length > 0) {
+              this.HealthTag('健康目标', this.userHealthArchive.healthGoal)
+            }
+          }
+          .width('100%')
+        }
+        .width('100%')
+        .padding({ left: 14, right: 14, top: 8, bottom: 8 })
+      }
+
+      // 舌象照片
+      if (this.tongueImageUrlList().length > 0) {
+        Column({ space: 6 }) {
+          Row() {
+            Column()
+              .width(3)
+              .height(12)
+              .backgroundColor(BRAND_GREEN)
+              .borderRadius(2)
+            Text('舌象照片')
+              .fontSize(12)
+              .fontWeight(FontWeight.Bold)
+              .fontColor(DEEP_TEXT)
+              .margin({ left: 5 })
+          }
+          .width('100%')
+
+          Row({ space: 8 }) {
             ForEach(this.tongueImageUrlList(), (url: string) => {
               Image(url)
                 .width(70)
@@ -386,81 +570,276 @@ export struct DoctorConsultationTab {
             }, (url: string) => url)
           }
           .width('100%')
-        } else {
-          Row({ space: 12 }) {
-            Column() {
-              Text('👅')
-                .fontSize(32)
-            }
-            .width(60)
-            .height(60)
-            .backgroundColor('#F5F5F5')
-            .borderRadius(CARD_RADIUS)
-            .justifyContent(FlexAlign.Center)
-            .alignItems(HorizontalAlign.Center)
-
-            Text('本次未分享舌象照片')
-              .fontSize(13)
-              .fontColor(MUTED_TEXT)
-              .layoutWeight(1)
-          }
-          .width('100%')
         }
-      }
-      .width('100%')
-      .padding({ top: 8 })
-
-      Text('以上为用户授权共享的健康数据')
-        .fontSize(11)
-        .fontColor(MUTED_TEXT)
         .width('100%')
-        .textAlign(TextAlign.End)
+        .padding({ left: 14, right: 14, top: 8, bottom: 8 })
+      }
     }
     .width('100%')
-    .padding(12)
-    .backgroundColor('#FAFCFA')
-    .borderRadius(CARD_RADIUS)
+    .backgroundColor(CARD_BG)
+    .borderRadius({ bottomLeft: 0, bottomRight: 0 })
   }
 
   @Builder
-  HealthInfoItem(label: string, value: string) {
-    Column({ space: 2 }) {
+  HealthTag(label: string, value: string) {
+    Row({ space: 4 }) {
       Text(label)
         .fontSize(11)
         .fontColor(MUTED_TEXT)
       Text(value)
-        .fontSize(14)
+        .fontSize(12)
         .fontColor(DEEP_TEXT)
         .fontWeight(FontWeight.Medium)
     }
-    .alignItems(HorizontalAlign.Start)
+    .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+    .backgroundColor('#F5F5F5')
+    .borderRadius(10)
+    .margin({ right: 6, bottom: 4 })
   }
 
   @Builder
   ChatBubble(message: ConsultationMessageItem) {
-    Row() {
-      if (message.senderRole === 'DOCTOR') {
+    if (message.senderRole === 'DOCTOR') {
+      Column({ space: 3 }) {
+        Row({ space: 8 }) {
+          Column() {
+            Text('我')
+              .fontSize(14)
+              .fontColor(Color.White)
+          }
+          .width(36)
+          .height(36)
+          .borderRadius(4)
+          .backgroundColor(BRAND_GREEN)
+          .justifyContent(FlexAlign.Center)
+
+          if (this.isImageMessage(message.content)) {
+            Image(this.extractImageUrl(message.content))
+              .width(120)
+              .height(120)
+              .borderRadius(8)
+              .objectFit(ImageFit.Cover)
+              .constraintSize({ maxWidth: '72%' })
+          } else {
+            Text(message.content)
+              .fontSize(15)
+              .fontColor('#000000')
+              .lineHeight(22)
+              .padding({ left: 10, right: 10, top: 8, bottom: 8 })
+              .backgroundColor('#95EC69')
+              .borderRadius(8)
+              .constraintSize({ maxWidth: '72%' })
+          }
+          Blank()
+        }
+        .width('100%')
+        .gesture(
+          LongPressGesture()
+            .onAction(() => { this.openActionMenu(message.id); })
+        )
+
+        if (!this.isImageMessage(message.content) && message.content !== '[已撤回]') {
+          Text('以上为根据你口述症状给出的建议，不能替代面诊，必要时请前往医院就诊。')
+            .fontSize(10)
+            .fontColor(MUTED_TEXT)
+            .margin({ left: 44 })
+            .constraintSize({ maxWidth: '72%' })
+        }
+      }
+      .width('100%')
+    } else {
+      Row({ space: 8 }) {
         Blank()
+        if (this.isImageMessage(message.content)) {
+          Image(this.extractImageUrl(message.content))
+            .width(120)
+            .height(120)
+            .borderRadius(8)
+            .objectFit(ImageFit.Cover)
+            .constraintSize({ maxWidth: '72%' })
+        } else {
+          Text(message.content)
+            .fontSize(15)
+            .fontColor('#000000')
+            .lineHeight(22)
+            .padding({ left: 10, right: 10, top: 8, bottom: 8 })
+            .backgroundColor('#FFFFFF')
+            .borderRadius(8)
+            .constraintSize({ maxWidth: '72%' })
+        }
+        Column() {
+          Text('患')
+            .fontSize(14)
+            .fontColor(Color.White)
+        }
+        .width(36)
+        .height(36)
+        .borderRadius(4)
+        .backgroundColor('#888888')
+        .justifyContent(FlexAlign.Center)
       }
-      Column({ space: 4 }) {
-        Text(message.senderRole === 'DOCTOR' ? '我' : '用户')
-          .fontSize(11)
-          .fontColor(message.senderRole === 'DOCTOR' ? MUTED_TEXT : BRAND_GREEN)
-        Text(message.content)
-          .fontSize(14)
-          .fontColor(message.senderRole === 'DOCTOR' ? '#FFFFFF' : DEEP_TEXT)
-          .lineHeight(21)
-      }
-      .alignItems(HorizontalAlign.Start)
-      .padding({ left: 12, right: 12, top: 10, bottom: 10 })
-      .backgroundColor(message.senderRole === 'DOCTOR' ? BRAND_GREEN : '#FFFFFF')
-      .borderRadius(CARD_RADIUS)
-      .constraintSize({ maxWidth: '82%' })
-      if (message.senderRole !== 'DOCTOR') {
-        Blank()
-      }
+      .width('100%')
+      .gesture(
+        LongPressGesture()
+          .onAction(() => { this.openActionMenu(message.id); })
+      )
     }
-    .width('100%')
+  }
+
+  @Builder
+  ActionMenuOverlay() {
+    Column()
+      .width('100%')
+      .height('100%')
+      .backgroundColor('rgba(0,0,0,0.5)')
+      .onClick(() => { this.closeActionMenu(); })
+
+    Column({ space: 0 }) {
+      Text('撤回消息')
+        .fontSize(16)
+        .fontColor(DEEP_TEXT)
+        .width('100%')
+        .height(48)
+        .textAlign(TextAlign.Center)
+        .onClick(() => { this.doRecallMessage(); })
+      Divider().color('#E0E0E0')
+      Text('删除消息')
+        .fontSize(16)
+        .fontColor('#FF4444')
+        .width('100%')
+        .height(48)
+        .textAlign(TextAlign.Center)
+        .onClick(() => { this.doDeleteMessage(); })
+    }
+    .width('70%')
+    .backgroundColor('#FFFFFF')
+    .borderRadius(12)
+    .position({ x: '15%', y: '40%' })
+  }
+
+  // ==================== 业务逻辑 ====================
+  private openActionMenu(messageId: string): void {
+    this.actionMenuMessageId = messageId;
+    this.showActionMenu = true;
+  }
+
+  private closeActionMenu(): void {
+    this.showActionMenu = false;
+    this.actionMenuMessageId = '';
+  }
+
+  private doRecallMessage(): void {
+    const msgId = this.actionMenuMessageId;
+    this.closeActionMenu();
+    recallConsultationMessage(msgId).then(() => {
+      this.loadMessages(this.selectedConsultationId);
+    }).catch((err: Error) => {
+      this.feedback = `撤回失败: ${err.message}`;
+    });
+  }
+
+  private doDeleteMessage(): void {
+    const msgId = this.actionMenuMessageId;
+    this.closeActionMenu();
+    deleteConsultationMessage(msgId).then(() => {
+      this.loadMessages(this.selectedConsultationId);
+    }).catch((err: Error) => {
+      this.feedback = `删除失败: ${err.message}`;
+    });
+  }
+
+  private chatTitle(): string {
+    const thread = this.selectedConsultation();
+    if (thread) {
+      return this.patientDisplayName(thread);
+    }
+    return '问诊';
+  }
+
+  private patientInitial(thread: ConsultationThread): string {
+    const name = this.patientDisplayName(thread);
+    return name.length > 0 ? name.charAt(0) : '患';
+  }
+
+  private patientDisplayName(thread: ConsultationThread): string {
+    if (thread.sharedName && thread.sharedName.length > 0) {
+      return thread.sharedName;
+    }
+    if (this.userHealthArchive && this.userHealthArchive.realName.length > 0) {
+      return this.userHealthArchive.realName;
+    }
+    return '用户' + (thread.userId ? thread.userId.slice(-4) : '');
+  }
+
+  private isImageMessage(content: string): boolean {
+    return content.startsWith('[IMG]');
+  }
+
+  private extractImageUrl(content: string): string {
+    return content.substring(5);
+  }
+
+  private exitChat(): void {
+    this.showChat = false;
+    this.selectedConsultationId = '';
+    this.messages = [];
+    this.refreshConsultations();
+  }
+
+  private sendMessage(): void {
+    const content = this.draftMessage.trim();
+    if (content.length === 0 || this.isLoading) {
+      return;
+    }
+    this.isLoading = true;
+    this.draftMessage = '';
+
+    sendConsultationMessage(this.selectedConsultationId, content)
+      .then(() => {
+        this.loadMessages(this.selectedConsultationId);
+      })
+      .catch((err: Error) => {
+        this.feedback = buildConsultationSaveFailureText(err.message);
+      })
+      .finally(() => {
+        this.isLoading = false;
+      });
+  }
+
+  private pickAndSendImage(): void {
+    if (this.isUploading) {
+      return;
+    }
+    this.isUploading = true;
+    this.feedback = '正在上传图片...';
+
+    const selectOption: picker.PhotoSelectOptions = {
+      MIMEType: picker.PhotoViewMIMETypes.IMAGE_TYPE,
+      maxSelectNumber: 1
+    };
+    const photoPicker = new picker.PhotoViewPicker();
+    photoPicker.select(selectOption).then((result: picker.PhotoSelectResult) => {
+      if (result.photoUris && result.photoUris.length > 0) {
+        return uploadImage(result.photoUris[0]);
+      }
+      this.feedback = '';
+      throw new Error('未选择图片');
+    }).then((uploadResult: UploadResult) => {
+      const imageContent = `[IMG]${uploadResult.imageUrl}`;
+      this.feedback = '';
+      return sendConsultationMessage(this.selectedConsultationId, imageContent)
+        .then(() => {
+          this.loadMessages(this.selectedConsultationId);
+        });
+    }).catch((err: Error) => {
+      if (err.message === '未选择图片' || err.message.indexOf('cancel') >= 0) {
+        this.feedback = '';
+      } else {
+        this.feedback = `图片上传失败: ${err.message}`;
+      }
+    }).finally(() => {
+      this.isUploading = false;
+    });
   }
 
   private refreshConsultations(): void {
@@ -473,6 +852,7 @@ export struct DoctorConsultationTab {
         this.selectedConsultationId = items[0].id;
         this.parsedSnapshot = this.healthSnapshot();
         this.loadMessages(items[0].id);
+        this.loadUserHealthArchive(items[0].id);
       }
     }).catch(() => {
       this.consultations = [];
@@ -488,22 +868,11 @@ export struct DoctorConsultationTab {
     });
   }
 
-  private sendMessage(): void {
-    if (this.selectedConsultationId.length === 0 || this.draftMessage.trim().length === 0) {
-      return;
-    }
-    sendConsultationMessage(this.selectedConsultationId, this.draftMessage.trim()).then((saved: boolean) => {
-      if (saved) {
-        this.draftMessage = '';
-        this.feedback = '回复已发送。';
-        this.loadMessages(this.selectedConsultationId);
-        this.refreshConsultations();
-        this.scrollMessagesToBottom();
-      } else {
-        this.feedback = buildConsultationSaveFailureText('');
-      }
-    }).catch((error: Error) => {
-      this.feedback = buildConsultationSaveFailureText(error.message);
+  private loadUserHealthArchive(consultationId: string): void {
+    fetchUserHealthByConsultation(consultationId).then((archive: UserHealthArchive | null) => {
+      this.userHealthArchive = archive;
+    }).catch(() => {
+      this.userHealthArchive = null;
     });
   }
 
@@ -515,20 +884,6 @@ export struct DoctorConsultationTab {
       }
     }
     return null;
-  }
-
-  private hasSelectedConsultation(): boolean {
-    return this.selectedConsultation() !== null;
-  }
-
-  private selectedConsultationSymptom(): string {
-    const thread = this.selectedConsultation();
-    return thread !== null ? thread.symptom : '';
-  }
-
-  private selectedConsultationDescription(): string {
-    const thread = this.selectedConsultation();
-    return thread !== null ? thread.description : '';
   }
 
   private selectedConsultationStatus(): string {
@@ -598,40 +953,30 @@ export struct DoctorConsultationTab {
     if (bp.systolic === undefined || bp.systolic === null || bp.diastolic === undefined || bp.diastolic === null) {
       return bp.stateText ? bp.stateText : '未共享';
     }
-    const text = `${bp.systolic}/${bp.diastolic}`;
-    return bp.stateText && bp.stateText.length > 0 ? `${text} (${bp.stateText})` : text;
+    return `${bp.systolic}/${bp.diastolic}`;
   }
 
   private bloodSugarText(): string {
     if (!this.parsedSnapshot || !this.parsedSnapshot.bloodSugar) return '未共享';
     const bs = this.parsedSnapshot.bloodSugar;
     if (bs.value === undefined || bs.value === null) return '未共享';
-    const valueText = `${bs.value}`;
-    const unitText = bs.unit ? ` ${bs.unit}` : '';
-    const typeText = bs.typeText && bs.typeText.length > 0 ? ` (${bs.typeText})` : '';
-    return `${valueText}${unitText}${typeText}`;
+    return `${bs.value}`;
   }
 
   private heartRateText(): string {
     if (!this.parsedSnapshot || !this.parsedSnapshot.heartRate) return '未共享';
     const hr = this.parsedSnapshot.heartRate;
     if (hr.value === undefined || hr.value === null) return '未共享';
-    const valueText = `${hr.value}`;
-    const unitText = hr.unit ? ` ${hr.unit}` : '';
-    return `${valueText}${unitText}`;
+    return `${hr.value}`;
   }
 
   private sleepText(): string {
     if (!this.parsedSnapshot || !this.parsedSnapshot.sleep) return '未共享';
     const sl = this.parsedSnapshot.sleep;
-    if (sl.totalText && sl.totalText.length > 0) {
-      return sl.stateText && sl.stateText.length > 0 ? `${sl.totalText} (${sl.stateText})` : sl.totalText;
-    }
+    if (sl.totalText && sl.totalText.length > 0) return sl.totalText;
     if (sl.totalMinutes !== undefined && sl.totalMinutes !== null) {
       const hours = Math.floor(sl.totalMinutes / 60);
-      const minutes = sl.totalMinutes % 60;
-      const text = hours > 0 ? `${hours}小时${minutes > 0 ? minutes + '分钟' : ''}` : `${minutes}分钟`;
-      return sl.stateText && sl.stateText.length > 0 ? `${text} (${sl.stateText})` : text;
+      return `${hours}h`;
     }
     return '未共享';
   }
@@ -640,9 +985,16 @@ export struct DoctorConsultationTab {
     if (!this.parsedSnapshot || !this.parsedSnapshot.body) return '未共享';
     const bd = this.parsedSnapshot.body;
     if (bd.weightKg === undefined || bd.weightKg === null) return '未共享';
-    const weightText = `${bd.weightKg}kg`;
-    const bmiText = bd.bmi !== undefined && bd.bmi !== null ? ` (BMI ${bd.bmi})` : '';
-    return `${weightText}${bmiText}`;
+    return `${bd.weightKg}kg`;
+  }
+
+  private bmiText(height: number, weight: number): string {
+    if (height <= 0 || weight <= 0) {
+      return '';
+    }
+    const heightM = height / 100;
+    const bmi = weight / (heightM * heightM);
+    return bmi.toFixed(1);
   }
 
   private scrollMessagesToBottom(): void {

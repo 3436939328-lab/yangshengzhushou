@@ -11,18 +11,18 @@
     <result column="specialty" property="specialty" jdbcType="VARCHAR" />
     <result column="introduction" property="introduction" jdbcType="VARCHAR" />
     <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
-    <result column="avatar_url" property="avatar" jdbcType="VARCHAR" />
+    <result column="avatar" property="avatar" jdbcType="VARCHAR" />
     <result column="department" property="department" jdbcType="VARCHAR" />
-    <result column="license_no" property="licenseNumber" jdbcType="VARCHAR" />
+    <result column="license_number" property="licenseNumber" jdbcType="VARCHAR" />
     <result column="license_image_urls" property="licenseImageUrls" jdbcType="VARCHAR" />
-    <result column="audit_status" property="verificationStatus" jdbcType="VARCHAR" />
-    <result column="audit_remark" property="verificationRemark" jdbcType="VARCHAR" />
+    <result column="verification_status" property="verificationStatus" jdbcType="VARCHAR" />
+    <result column="verification_remark" property="verificationRemark" jdbcType="VARCHAR" />
     <result column="accepting" property="accepting" jdbcType="BOOLEAN" />
   </resultMap>
 
   <sql id="Base_Column_List">
     id, user_id, doctor_name, title, specialty, introduction, create_time,
-    avatar_url, department, license_no, license_image_urls, audit_status, audit_remark, accepting
+    avatar, department, license_number, license_image_urls, verification_status, verification_remark, accepting
   </sql>
 
   <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long">
@@ -51,7 +51,7 @@
 
   <insert id="insert" parameterType="org.example.springbootdemo.bean.DoctorProfile">
     insert into doctor_profile (id, user_id, doctor_name, title, specialty, introduction, create_time,
-      avatar_url, department, license_no, license_image_urls, audit_status, audit_remark, accepting)
+      avatar, department, license_number, license_image_urls, verification_status, verification_remark, accepting)
     values (
       #{id,jdbcType=BIGINT}, #{userId,jdbcType=BIGINT}, #{doctorName,jdbcType=VARCHAR},
       #{title,jdbcType=VARCHAR}, #{specialty,jdbcType=VARCHAR}, #{introduction,jdbcType=VARCHAR},
@@ -72,12 +72,12 @@
       <if test="specialty != null">specialty,</if>
       <if test="introduction != null">introduction,</if>
       <if test="createTime != null">create_time,</if>
-      <if test="avatar != null">avatar_url,</if>
+      <if test="avatar != null">avatar,</if>
       <if test="department != null">department,</if>
-      <if test="licenseNumber != null">license_no,</if>
+      <if test="licenseNumber != null">license_number,</if>
       <if test="licenseImageUrls != null">license_image_urls,</if>
-      <if test="verificationStatus != null">audit_status,</if>
-      <if test="verificationRemark != null">audit_remark,</if>
+      <if test="verificationStatus != null">verification_status,</if>
+      <if test="verificationRemark != null">verification_remark,</if>
       <if test="accepting != null">accepting,</if>
     </trim>
     <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -107,12 +107,12 @@
       <if test="specialty != null">specialty = #{specialty,jdbcType=VARCHAR},</if>
       <if test="introduction != null">introduction = #{introduction,jdbcType=VARCHAR},</if>
       <if test="createTime != null">create_time = #{createTime,jdbcType=TIMESTAMP},</if>
-      <if test="avatar != null">avatar_url = #{avatar,jdbcType=VARCHAR},</if>
+      <if test="avatar != null">avatar = #{avatar,jdbcType=VARCHAR},</if>
       <if test="department != null">department = #{department,jdbcType=VARCHAR},</if>
-      <if test="licenseNumber != null">license_no = #{licenseNumber,jdbcType=VARCHAR},</if>
+      <if test="licenseNumber != null">license_number = #{licenseNumber,jdbcType=VARCHAR},</if>
       <if test="licenseImageUrls != null">license_image_urls = #{licenseImageUrls,jdbcType=VARCHAR},</if>
-      <if test="verificationStatus != null">audit_status = #{verificationStatus,jdbcType=VARCHAR},</if>
-      <if test="verificationRemark != null">audit_remark = #{verificationRemark,jdbcType=VARCHAR},</if>
+      <if test="verificationStatus != null">verification_status = #{verificationStatus,jdbcType=VARCHAR},</if>
+      <if test="verificationRemark != null">verification_remark = #{verificationRemark,jdbcType=VARCHAR},</if>
       <if test="accepting != null">accepting = #{accepting,jdbcType=BOOLEAN},</if>
     </set>
     where id = #{id,jdbcType=BIGINT}
@@ -126,12 +126,12 @@
       specialty = #{specialty,jdbcType=VARCHAR},
       introduction = #{introduction,jdbcType=VARCHAR},
       create_time = #{createTime,jdbcType=TIMESTAMP},
-      avatar_url = #{avatar,jdbcType=VARCHAR},
+      avatar = #{avatar,jdbcType=VARCHAR},
       department = #{department,jdbcType=VARCHAR},
-      license_no = #{licenseNumber,jdbcType=VARCHAR},
+      license_number = #{licenseNumber,jdbcType=VARCHAR},
       license_image_urls = #{licenseImageUrls,jdbcType=VARCHAR},
-      audit_status = #{verificationStatus,jdbcType=VARCHAR},
-      audit_remark = #{verificationRemark,jdbcType=VARCHAR},
+      verification_status = #{verificationStatus,jdbcType=VARCHAR},
+      verification_remark = #{verificationRemark,jdbcType=VARCHAR},
       accepting = #{accepting,jdbcType=BOOLEAN}
     where id = #{id,jdbcType=BIGINT}
   </update>

@@ -5,6 +5,7 @@ import {
   SmsCodeResult,
   buildAuthFailureText,
   identifyPasswordResetAccount,
+  isValidPhone,
   loginWithPhone,
   loginWithSmsCode,
   registerWithPhone,
@@ -163,7 +164,7 @@ export struct AuthView {
   PasswordResetForm() {
     Column({ space: 12 }) {
       if (this.resetStep === 1) {
-        TextInput({ placeholder: '手机号或账号', text: this.resetAccount })
+        TextInput({ placeholder: '手机号', text: this.resetAccount })
           .height(48)
           .fontSize(15)
           .backgroundColor('#F6F8F5')
@@ -404,7 +405,7 @@ export struct AuthView {
     this.actionText = '';
     this.executeSmsRequest(sendAuthSmsCode(targetPhone, purpose), purpose).then((result: SmsCodeResult) => {
       this.isSendingCode = false;
-      this.actionText = result.devCode.length > 0 ? `验证码已发送，开发验证码：${result.devCode}` : '验证码已发送';
+      this.actionText = '验证码已发送，请查看手机短信';
     }).catch((error: Error) => {
       this.isSendingCode = false;
       this.actionText = buildAuthFailureText(this.authMode === 'register', error.message);
@@ -540,15 +541,15 @@ export struct AuthView {
 
   private submitPasswordReset(): void {
     if (this.resetStep === 1) {
-      if (this.resetAccount.trim().length === 0) {
-        this.actionText = '请输入手机号或账号';
+      if (!isValidPhone(this.resetAccount.trim())) {
+        this.actionText = '请输入正确的手机号';
         return;
       }
       this.isSubmitting = true;
       this.actionText = '';
       identifyPasswordResetAccount(this.resetAccount).then((target: PasswordResetTarget) => {
         this.isSubmitting = false;
-        this.resetPhone = target.phone;
+        this.resetPhone = this.resetAccount.trim();
         this.resetMaskedPhone = target.maskedPhone;
         this.resetStep = 2;
         this.actionText = target.maskedPhone.length > 0 ? `已确认账号，绑定手机号：${target.maskedPhone}` : '已确认账号';

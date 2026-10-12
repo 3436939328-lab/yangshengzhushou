@@ -1,3 +1,4 @@
+import { picker } from '@kit.CoreFileKit';
 import {
   BRAND_GREEN,
   CARD_BG,
@@ -15,6 +16,7 @@ import {
   saveDraft,
   submitForReview
 } from '../../services/DoctorReviewService';
+import { uploadImage } from '../../services/AssetService';
 
 interface RegistrationStep {
   key: string;
@@ -71,7 +73,8 @@ export struct DoctorRegistrationView {
   @State review: DoctorReviewItem | null = null;
   @State feedback: string = '';
   @State submitting: boolean = false;
-  @State licenseImageInput: string = '';
+  @State uploadingLicenseImage: boolean = false;
+  @State uploadingAvatar: boolean = false;
 
   aboutToAppear() {
     this.loadQualification();
@@ -107,15 +110,88 @@ export struct DoctorRegistrationView {
     };
   }
 
-  private addLicenseImageUrl(): void {
-    const url = this.licenseImageInput.trim();
-    if (url.length === 0) return;
-    const existing = this.form.licenseImageUrls.length > 0
-      ? this.form.licenseImageUrls.split(',').filter((s: string) => s.trim().length > 0)
-      : [];
-    existing.push(url);
-    this.updateForm({ licenseImageUrls: existing.join(',') });
-    this.licenseImageInput = '';
+  private async pickAvatarImage(): Promise<void> {
+    if (this.uploadingAvatar) return;
+    try {
+      const photoViewPicker = new picker.PhotoViewPicker();
+      const selectOption: picker.PhotoSelectOptions = {
+        MIMEType: picker.PhotoViewMIMETypes.IMAGE_TYPE,
+        maxSelectNumber: 1
+      };
+      const result = await photoViewPicker.select(selectOption);
+      if (result.photoUris.length > 0) {
+        this.uploadAvatar(result.photoUris[0]);
+      }
+    } catch {
+      this.feedback = '选择图片失败';
+    }
+  }
+
+  private uploadAvatar(uri: string): void {
+    this.uploadingAvatar = true;
+    this.feedback = '头像上传中...';
+    uploadImage(uri)
+      .then((result) => {
+        this.updateForm({ avatar: result.imageUrl });
+        this.uploadingAvatar = false;
+        this.feedback = '头像上传成功';
+      })
+      .catch((err: Error) => {
+        this.uploadingAvatar = false;
+        this.feedback = `头像上传失败: ${err.message}`;
+      });
+  }
+
+  private async pickLicenseImage(): Promise<void> {
+    if (this.uploadingLicenseImage) return;
+    try {
+      const photoViewPicker = new picker.PhotoViewPicker();
+      const selectOption: picker.PhotoSelectOptions = {
+        MIMEType: picker.PhotoViewMIMETypes.IMAGE_TYPE,
+        maxSelectNumber: 9
+      };
+      const result = await photoViewPicker.select(selectOption);
+      if (result.photoUris.length > 0) {
+        this.uploadLicenseImages(result.photoUris);
+      }
+    } catch {
+      this.feedback = '选择图片失败';
+    }
+  }
+
+  private uploadLicenseImages(uris: string[]): void {
+    this.uploadingLicenseImage = true;
+    this.feedback = `上传中 (0/${uris.length})...`;
+    let uploaded = 0;
+    let failed = 0;
+    const uploadNext = () => {
+      if (uploaded + failed >= uris.length) {
+        this.uploadingLicenseImage = false;
+        if (failed > 0) {
+          this.feedback = `${uploaded} 张上传成功，${failed} 张失败`;
+        } else {
+          this.feedback = `${uploaded} 张上传成功`;
+        }
+        return;
+      }
+      const index = uploaded + failed;
+      uploadImage(uris[index])
+        .then((result) => {
+          const existing = this.form.licenseImageUrls.length > 0
+            ? this.form.licenseImageUrls.split(',').filter((s: string) => s.trim().length > 0)
+            : [];
+          existing.push(result.imageUrl);
+          this.updateForm({ licenseImageUrls: existing.join(',') });
+          uploaded += 1;
+          this.feedback = `上传中 (${uploaded}/${uris.length})...`;
+          uploadNext();
+        })
+        .catch((err: Error) => {
+          failed += 1;
+          uploadNext();
+        });
+    };
+    uploadNext();
   }
 
   private removeLicenseImageUrl(url: string): void {
@@ -313,21 +389,40 @@ export struct DoctorRegistrationView {
         .fontWeight(FontWeight.Bold)
         .fontColor(DEEP_TEXT)
 
-      if (this.form.avatar.length > 0) {
-        Image(this.form.avatar)
-          .width(80)
-          .height(80)
-          .borderRadius(40)
-          .objectFit(ImageFit.Cover)
-          .margin({ bottom: 8 })
-      }
+      Row({ space: 12 }) {
+        if (this.form.avatar.length > 0) {
+          Image(this.form.avatar)
+            .width(64)
+            .height(64)
+            .borderRadius(32)
+            .objectFit(ImageFit.Cover)
+        } else {
+          Column() {
+            Text('📷')
+              .fontSize(22)
+            Text('点击上传')
+              .fontSize(11)
+              .fontColor(MUTED_TEXT)
+          }
+          .width(64)
+          .height(64)
+          .borderRadius(32)
+          .backgroundColor('#F5F5F5')
+          .justifyContent(FlexAlign.Center)
+          .onClick(() => { this.pickAvatarImage(); })
+        }
 
-      TextInput({ placeholder: '头像图片URL', text: this.form.avatar })
-        .height(42)
-        .fontSize(14)
-        .backgroundColor('#F6F8F5')
-        .borderRadius(CARD_RADIUS)
-        .onChange((value: string) => { this.updateForm({ avatar: value }); })
+        Button(this.uploadingAvatar ? '上传中...' : '从相册选择头像')
+          .height(38)
+          .fontSize(13)
+          .fontColor(BRAND_GREEN)
+          .backgroundColor('#EEF7F1')
+          .border({ width: 1, color: BRAND_GREEN })
+          .borderRadius(CARD_RADIUS)
+          .enabled(!this.uploadingAvatar)
+          .onClick(() => { this.pickAvatarImage(); })
+      }
+      .width('100%')
 
       TextInput({ placeholder: '医生姓名 *', text: this.form.doctorName })
         .height(42)
@@ -385,41 +480,52 @@ export struct DoctorRegistrationView {
         .borderRadius(CARD_RADIUS)
         .onChange((value: string) => { this.updateForm({ licenseNumber: value }); })
 
-      Row({ space: 8 }) {
-        TextInput({ placeholder: '资格证照片URL', text: this.licenseImageInput })
-          .height(42)
-          .fontSize(14)
-          .backgroundColor('#F6F8F5')
-          .borderRadius(CARD_RADIUS)
-          .layoutWeight(1)
-          .onChange((value: string) => { this.licenseImageInput = value; })
-        Button('添加')
-          .height(42)
-          .fontColor(Color.White)
-          .backgroundColor(BRAND_GREEN)
-          .borderRadius(CARD_RADIUS)
-          .onClick(() => { this.addLicenseImageUrl(); })
+      Button() {
+        Row({ space: 8 }) {
+          Text('+')
+            .fontSize(18)
+            .fontColor(BRAND_GREEN)
+          Text(this.uploadingLicenseImage ? '上传中...' : '从相册选择资格证照片')
+            .fontSize(14)
+            .fontColor(BRAND_GREEN)
+        }
       }
       .width('100%')
+      .height(48)
+      .backgroundColor('#EEF7F1')
+      .border({ width: 1, color: BRAND_GREEN, style: BorderStyle.Dashed })
+      .borderRadius(CARD_RADIUS)
+      .enabled(!this.uploadingLicenseImage)
+      .onClick(() => { this.pickLicenseImage(); })
 
-      ForEach(this.licenseImageUrlList(), (url: string) => {
-        Row() {
-          Text(url)
-            .fontSize(12)
-            .fontColor(MUTED_TEXT)
-            .layoutWeight(1)
-            .maxLines(1)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-          Text('删除')
-            .fontSize(12)
-            .fontColor(WARM_ACCENT)
-            .onClick(() => { this.removeLicenseImageUrl(url); })
+      if (this.licenseImageUrlList().length > 0) {
+        Flex({ wrap: FlexWrap.Wrap }) {
+          ForEach(this.licenseImageUrlList(), (url: string, index: number) => {
+            Stack({ alignContent: Alignment.TopEnd }) {
+              Image(url)
+                .width(80)
+                .height(80)
+                .borderRadius(8)
+                .objectFit(ImageFit.Cover)
+                .margin({ right: 8, bottom: 8 })
+              Text('×')
+                .fontSize(14)
+                .fontColor(Color.White)
+                .width(20)
+                .height(20)
+                .textAlign(TextAlign.Center)
+                .backgroundColor('rgba(0,0,0,0.5)')
+                .borderRadius(10)
+                .margin({ top: 2, right: 10 })
+                .onClick(() => { this.removeLicenseImageUrl(url); })
+            }
+            .width(80)
+            .height(80)
+            .margin({ right: 8, bottom: 8 })
+          }, (url: string, index: number) => `${index}-${url}`)
         }
         .width('100%')
-        .padding({ top: 8, bottom: 8, left: 12, right: 12 })
-        .backgroundColor('#FAFCFA')
-        .borderRadius(8)
-      }, (url: string, index: number) => `${index}-${url}`)
+      }
     }
     .width('100%')
     .padding({ left: 18, right: 18, top: 18, bottom: 18 })

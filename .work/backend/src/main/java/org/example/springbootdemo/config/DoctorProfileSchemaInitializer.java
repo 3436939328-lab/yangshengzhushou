@@ -17,8 +17,8 @@ public class DoctorProfileSchemaInitializer implements CommandLineRunner {
               user_id BIGINT NOT NULL,
               doctor_name VARCHAR(50) NOT NULL,
               title VARCHAR(50) NULL,
-              specialty VARCHAR(100) NULL,
-              introduction VARCHAR(1000) NULL,
+              specialty TEXT NULL,
+              introduction TEXT NULL,
               create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
               avatar VARCHAR(500) NULL,
               department VARCHAR(100) NULL,
@@ -60,6 +60,13 @@ public class DoctorProfileSchemaInitializer implements CommandLineRunner {
 
         for (String statement : buildMissingColumnStatements(columns)) {
             jdbcTemplate.execute(statement);
+        }
+
+        jdbcTemplate.execute("ALTER TABLE doctor_profile MODIFY COLUMN specialty TEXT NULL");
+        jdbcTemplate.execute("ALTER TABLE doctor_profile MODIFY COLUMN introduction TEXT NULL");
+
+        if (columns.contains("real_name")) {
+            jdbcTemplate.execute("ALTER TABLE doctor_profile MODIFY COLUMN real_name VARCHAR(50) NULL");
         }
     }
 

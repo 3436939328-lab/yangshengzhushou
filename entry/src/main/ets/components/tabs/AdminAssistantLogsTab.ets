@@ -24,6 +24,9 @@ export struct AdminAssistantLogsTab {
   @State totalLogCount: number = 0;
   @State logUserCount: number = 0;
   @State answeredLogCount: number = 0;
+  @State showConversation: boolean = false;
+  @State isLoadingLogs: boolean = false;
+  @State loadError: string = '';
 
   aboutToAppear() {
     this.refreshLogs();
@@ -35,7 +38,7 @@ export struct AdminAssistantLogsTab {
         .fontSize(24)
         .fontWeight(FontWeight.Bold)
         .fontColor(DEEP_TEXT)
-      Text('管理员查看所有用户的养生助手问答总记录，点击用户后显示完整对话。')
+      Text('管理员查看所有用户的养生助手问答汇总，完整对话需点击展开。')
         .fontSize(14)
         .fontColor(MUTED_TEXT)
         .lineHeight(22)
@@ -68,13 +71,30 @@ export struct AdminAssistantLogsTab {
             })
         }
 
-        if (this.feedback.length > 0) {
-          Text(this.feedback)
-            .fontSize(12)
-            .fontColor(WARM_ACCENT)
+        if (this.isLoadingLogs) {
+          Text('正在加载问答记录...')
+            .fontSize(13)
+            .fontColor(MUTED_TEXT)
+        }
+        if (this.loadError.length > 0) {
+          Row({ space: 10 }) {
+            Text(this.loadError)
+              .fontSize(13)
+              .fontColor(WARM_ACCENT)
+              .layoutWeight(1)
+            Button('重试')
+              .fontSize(12)
+              .fontColor(BRAND_GREEN)
+              .backgroundColor('#EEF7F1')
+              .borderRadius(12)
+              .onClick(() => {
+                this.refreshLogs();
+              })
+          }
+          .width('100%')
         }
 
-        if (this.groups.length === 0) {
+        if (this.groups.length === 0 && !this.isLoadingLogs && this.loadError.length === 0) {
           Text('暂无养生助手问答记录。')
             .fontSize(13)
             .fontColor(MUTED_TEXT)
@@ -111,6 +131,7 @@ export struct AdminAssistantLogsTab {
             .borderRadius(CARD_RADIUS)
             .onClick(() => {
               this.selectedUserId = group.userId;
+              this.showConversation = false;
             })
           }, (group: AdminAssistantLogGroup) => group.userId)
         }
@@ -150,13 +171,29 @@ export struct AdminAssistantLogsTab {
           })
       }
 
-      ForEach(this.selectedLogs(), (log: AdminAssistantLogItem) => {
-        Column({ space: 8 }) {
-          this.ChatBubble('用户', log.question, false)
-          this.ChatBubble('助手', log.answer.length > 0 ? log.answer : '暂未回答', true)
-        }
-        .width('100%')
-      }, (log: AdminAssistantLogItem) => log.id)
+      Button(this.showConversation ? '收起对话' : '查看完整对话')
+        .fontSize(12)
+        .fontColor(BRAND_GREEN)
+        .backgroundColor('#EEF7F1')
+        .borderRadius(12)
+        .margin({ top: 4, bottom: 4 })
+        .onClick(() => {
+          this.showConversation = !this.showConversation;
+        })
+      if (this.showConversation) {
+        ForEach(this.selectedLogs(), (log: AdminAssistantLogItem) => {
+          Column({ space: 8 }) {
+            this.ChatBubble('用户', log.question, false)
+            this.ChatBubble('助手', log.answer.length > 0 ? log.answer : '暂未回答', true)
+          }
+          .width('100%')
+        }, (log: AdminAssistantLogItem) => log.id)
+      } else {
+        Text('为保护用户隐私，完整对话默认收起，点击上方按钮展开。')
+          .fontSize(11)
+          .fontColor(MUTED_TEXT)
+          .lineHeight(18)
+      }
     }
     .width('100%')
     .padding(18)
@@ -184,6 +221,8 @@ export struct AdminAssistantLogsTab {
   }
 
   private refreshLogs(): void {
+    this.isLoadingLogs = true;
+    this.loadError = '';
     fetchAdminAssistantLogs().then((items: AdminAssistantLogItem[]) => {
       this.logs = items;
       this.groups = buildAdminAssistantLogGroups(items);
@@ -196,7 +235,10 @@ export struct AdminAssistantLogsTab {
       this.logs = [];
       this.groups = [];
       this.recalculateMetrics();
-      this.feedback = error.message.length > 0 ? error.message : '问答记录暂时加载失败。';
+      this.feedback = '';
+      this.loadError = error.message.length > 0 ? error.message : '问答记录暂时加载失败。';
+    }).finally(() => {
+      this.isLoadingLogs = false;
     });
   }
 

@@ -1,5 +1,6 @@
 import { common } from '@kit.AbilityKit';
 import picker from '@ohos.file.picker';
+import { camera, cameraPicker } from '@kit.CameraKit';
 import {
   TongueImageRecord,
   TongueImageQualityStatus,
@@ -17,6 +18,12 @@ import {
 import { SectionTitle } from '../cards/CommonCards';
 import { EmptyStateBlock } from '../cards/EmptyStateBlock';
 import { getEmptyStateInfo } from '../../services/EmptyStateService';
+import {
+  fetchTongueImageList,
+  uploadAndAnalyzeTongueImage,
+  reanalyzeTongueImage,
+  deleteTongueImage
+} from '../../services/TongueService';
 
 /**
  * 舌象照片页面模式
@@ -31,23 +38,39 @@ export enum TongueImageViewMode {
 
 @Component
 export struct TongueImageView {
-  @Prop images: TongueImageRecord[];
-  @Prop isLoading: boolean;
-
   @State viewMode: TongueImageViewMode = TongueImageViewMode.LIST;
   @State selectedImage: TongueImageRecord | null = null;
   @State capturedImageUri: string = '';
   @State imageSource: 'CAMERA' | 'ALBUM' = 'CAMERA';
   @State analysisProgress: number = 0;
   @State showSourcePicker: boolean = false;
+  @State localImages: TongueImageRecord[] = [];
+  @State localLoading: boolean = false;
+  @State localError: string = '';
+  @State debugInfo: string = '';
+  @State analysisError: string = '';
 
-  onCaptureFromCamera?: () => void;
-  onPickFromAlbum?: () => void;
-  onUploadImage?: (uri: string, source: 'CAMERA' | 'ALBUM') => void;
-  onRequestAnalysis?: (imageId: string) => void;
-  onViewDetail?: (image: TongueImageRecord) => void;
-  onDeleteImage?: (imageId: string) => void;
   onBack?: () => void;
+
+  aboutToAppear() {
+    this.loadImages();
+  }
+
+  private loadImages(): void {
+    this.localLoading = true;
+    this.localError = '';
+    this.debugInfo = '正在请求 /api/tongue-image/list ...';
+    fetchTongueImageList().then((items: TongueImageRecord[]) => {
+      this.localImages = items;
+      this.localLoading = false;
+      this.debugInfo = `成功加载 ${items.length} 条记录`;
+    }).catch((err: Error) => {
+      this.localImages = [];
+      this.localLoading = false;
+      this.localError = err.message || '加载舌象记录失败';
+      this.debugInfo = `加载失败: ${err.message}`;
+    });
+  }
 
   build() {
     Stack() {
@@ -153,24 +176,29 @@ export struct TongueImageView {
   @Builder
   HeaderSection() {
     Row() {
-      if (this.viewMode !== TongueImageViewMode.LIST && this.onBack) {
-        Text('← 返回')
-          .fontSize(15)
-          .fontColor(BRAND_GREEN)
-          .onClick(() => {
-            if (this.onBack) this.onBack();
-            this.viewMode = TongueImageViewMode.LIST;
-          })
-      }
+      Text('← 返回')
+        .fontSize(15)
+        .fontColor(BRAND_GREEN)
+        .onClick(() => {
+          this.handleBack();
+        })
 
       Text(this.headerTitle())
         .fontSize(20)
         .fontWeight(FontWeight.Bold)
         .fontColor(DEEP_TEXT)
-        .margin({ left: this.viewMode !== TongueImageViewMode.LIST ? 12 : 0 })
+        .margin({ left: 12 })
         .layoutWeight(1)
 
       if (this.viewMode === TongueImageViewMode.LIST) {
+        Text('🔄')
+          .fontSize(16)
+          .fontColor(BRAND_GREEN)
+          .margin({ right: 12 })
+          .onClick(() => {
+            this.loadImages();
+          })
+
         Button() {
           Text('+ 添加')
             .fontSize(14)
@@ -185,6 +213,23 @@ export struct TongueImageView {
       }
     }
     .width('100%')
+  }
+
+  private handleBack(): void {
+    if (this.viewMode === TongueImageViewMode.DETAIL) {
+      this.viewMode = TongueImageViewMode.LIST;
+      this.selectedImage = null;
+      this.loadImages();
+    } else if (this.viewMode === TongueImageViewMode.ANALYZING) {
+      return;
+    } else if (this.viewMode === TongueImageViewMode.PREVIEW) {
+      this.viewMode = TongueImageViewMode.CAPTURE;
+    } else if (this.viewMode === TongueImageViewMode.CAPTURE) {
+      this.viewMode = TongueImageViewMode.LIST;
+      this.loadImages();
+    } else {
+      if (this.onBack) this.onBack();
+    }
   }
 
   private headerTitle(): string {
@@ -208,12 +253,23 @@ export struct TongueImageView {
 
       // 照片历史
       SectionTitle('舌象照片')
-      if (this.isLoading) {
+      if (this.localLoading) {
         EmptyStateBlock({ info: { title: '加载中...', detail: '正在加载舌象记录' } })
-      } else if (this.images.length === 0) {
+      } else if (this.localError.length > 0) {
+        this.ErrorStateView()
+      } else if (this.localImages.length === 0) {
         this.EmptyImagesView()
       } else {
         this.ImagesGridView()
+      }
+
+      // 调试信息
+      if (this.debugInfo.length > 0) {
+        Text(this.debugInfo)
+          .fontSize(11)
+          .fontColor(MUTED_TEXT)
+          .width('100%')
+          .padding({ left: 8, right: 8, top: 4, bottom: 4 })
       }
 
       // 文字记录入口
@@ -263,23 +319,79 @@ export struct TongueImageView {
   }
 
   @Builder
+  ErrorStateView() {
+    Column({ space: 16 }) {
+      Text('⚠️')
+        .fontSize(48)
+      Text('加载失败')
+        .fontSize(16)
+        .fontColor(DEEP_TEXT)
+        .fontWeight(FontWeight.Medium)
+      Text(this.localError)
+        .fontSize(13)
+        .fontColor(MUTED_TEXT)
+        .textAlign(TextAlign.Center)
+        .maxLines(5)
+      Text(this.debugInfo)
+        .fontSize(11)
+        .fontColor(MUTED_TEXT)
+        .textAlign(TextAlign.Center)
+        .maxLines(3)
+      Button() {
+        Text('点击重试')
+          .fontSize(14)
+          .fontColor(Color.White)
+      }
+      .width(140)
+      .height(40)
+      .backgroundColor(BRAND_GREEN)
+      .borderRadius(20)
+      .margin({ top: 8 })
+      .onClick(() => {
+        this.loadImages();
+      })
+    }
+    .width('100%')
+    .margin({ top: 30 })
+    .alignItems(HorizontalAlign.Center)
+  }
+
+  @Builder
   EmptyImagesView() {
     Column({ space: 16 }) {
       EmptyStateBlock({ info: getEmptyStateInfo('tongue') })
 
-      Button() {
-        Text('拍摄舌象')
-          .fontSize(15)
-          .fontColor(Color.White)
-          .fontWeight(FontWeight.Medium)
+      Row({ space: 12 }) {
+        Button() {
+          Text('拍摄舌象')
+            .fontSize(15)
+            .fontColor(Color.White)
+            .fontWeight(FontWeight.Medium)
+        }
+        .width(160)
+        .height(44)
+        .backgroundColor(BRAND_GREEN)
+        .borderRadius(22)
+        .onClick(() => {
+          this.showSourcePicker = true;
+        })
+
+        Button() {
+          Text('刷新')
+            .fontSize(14)
+            .fontColor(BRAND_GREEN)
+        }
+        .width(80)
+        .height(44)
+        .backgroundColor(Color.Transparent)
+        .border({ width: 1, color: BRAND_GREEN })
+        .borderRadius(22)
+        .onClick(() => {
+          this.loadImages();
+        })
       }
-      .width(200)
-      .height(44)
-      .backgroundColor(BRAND_GREEN)
-      .borderRadius(22)
-      .onClick(() => {
-        this.showSourcePicker = true;
-      })
+      .width('100%')
+      .justifyContent(FlexAlign.Center)
     }
     .width('100%')
     .margin({ top: 30 })
@@ -288,7 +400,7 @@ export struct TongueImageView {
   @Builder
   ImagesGridView() {
     Grid() {
-      ForEach(this.images, (image: TongueImageRecord) => {
+      ForEach(this.localImages, (image: TongueImageRecord) => {
         GridItem() {
           this.ImageGridItem(image)
         }
@@ -302,16 +414,24 @@ export struct TongueImageView {
   @Builder
   ImageGridItem(image: TongueImageRecord) {
     Stack() {
-      // 图片占位（实际使用时替换为真实图片）
-      Column() {
-        Text('👅')
-          .fontSize(36)
+      // 真实图片
+      if (image.imageUrl && image.imageUrl.length > 0) {
+        Image(image.imageUrl)
+          .width('100%')
+          .height(120)
+          .borderRadius(8)
+          .objectFit(ImageFit.Cover)
+      } else {
+        Column() {
+          Text('👅')
+            .fontSize(36)
+        }
+        .width('100%')
+        .height(120)
+        .backgroundColor('#F5F5F5')
+        .borderRadius(8)
+        .justifyContent(FlexAlign.Center)
       }
-      .width('100%')
-      .height(120)
-      .backgroundColor('#F5F5F5')
-      .borderRadius(8)
-      .justifyContent(FlexAlign.Center)
 
       // 质量/分析状态角标
       if (image.qualityStatus === TongueImageQualityStatus.NEED_RETAKE) {
@@ -347,9 +467,6 @@ export struct TongueImageView {
     .onClick(() => {
       this.selectedImage = image;
       this.viewMode = TongueImageViewMode.DETAIL;
-      if (this.onViewDetail) {
-        this.onViewDetail(image);
-      }
     })
   }
 
@@ -442,20 +559,28 @@ export struct TongueImageView {
         .fontWeight(FontWeight.Bold)
         .fontColor(DEEP_TEXT)
 
-      // 预览图占位
-      Column() {
-        Text('👅')
-          .fontSize(80)
-        Text('照片预览')
-          .fontSize(14)
-          .fontColor(MUTED_TEXT)
-          .margin({ top: 12 })
+      // 预览图
+      if (this.capturedImageUri.length > 0) {
+        Image(this.capturedImageUri)
+          .width('100%')
+          .height(280)
+          .borderRadius(CARD_RADIUS)
+          .objectFit(ImageFit.Cover)
+      } else {
+        Column() {
+          Text('👅')
+            .fontSize(80)
+          Text('照片预览')
+            .fontSize(14)
+            .fontColor(MUTED_TEXT)
+            .margin({ top: 12 })
+        }
+        .width('100%')
+        .height(280)
+        .backgroundColor('#F5F5F5')
+        .borderRadius(CARD_RADIUS)
+        .justifyContent(FlexAlign.Center)
       }
-      .width('100%')
-      .height(280)
-      .backgroundColor('#F5F5F5')
-      .borderRadius(CARD_RADIUS)
-      .justifyContent(FlexAlign.Center)
 
       // 质量检查结果
       Column({ space: 10 }) {
@@ -517,10 +642,8 @@ export struct TongueImageView {
       .onClick(() => {
         this.viewMode = TongueImageViewMode.ANALYZING;
         this.analysisProgress = 0;
-        this.startMockAnalysis();
-        if (this.onUploadImage) {
-          this.onUploadImage(this.capturedImageUri, this.imageSource);
-        }
+        this.analysisError = '';
+        this.startRealAnalysis();
       })
 
       Button() {
@@ -549,9 +672,6 @@ export struct TongueImageView {
         this.capturedImageUri = result.photoUris[0];
         this.imageSource = 'ALBUM';
         this.viewMode = TongueImageViewMode.PREVIEW;
-        if (this.onPickFromAlbum) {
-          this.onPickFromAlbum();
-        }
       }
     } catch {
       this.capturedImageUri = '';
@@ -560,31 +680,49 @@ export struct TongueImageView {
 
   private async captureFromCamera(): Promise<void> {
     try {
-      const photoViewPicker = new picker.PhotoViewPicker();
-      const selectOption: picker.PhotoSelectOptions = {
-        maxSelectNumber: 1
+      const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
+      const pickerProfile: cameraPicker.PickerProfile = {
+        cameraPosition: camera.CameraPosition.CAMERA_POSITION_BACK
       };
-      const result = await photoViewPicker.select(selectOption);
-      if (result.photoUris.length > 0) {
-        this.capturedImageUri = result.photoUris[0];
+      const pickerResult = await cameraPicker.pick(context,
+        [cameraPicker.PickerMediaType.PHOTO], pickerProfile);
+      if (pickerResult && pickerResult.resultUri && pickerResult.resultUri.length > 0) {
+        this.capturedImageUri = pickerResult.resultUri;
         this.imageSource = 'CAMERA';
         this.viewMode = TongueImageViewMode.PREVIEW;
-        if (this.onCaptureFromCamera) {
-          this.onCaptureFromCamera();
-        }
+      } else {
+        this.debugInfo = '相机不可用或用户取消了拍照，请尝试从相册选择';
       }
-    } catch {
+    } catch (e) {
+      const err = e as Error;
+      this.debugInfo = `拍照失败: ${err.message}，请尝试从相册选择`;
       this.capturedImageUri = '';
     }
   }
 
-  private startMockAnalysis(): void {
-    const timer = setInterval(() => {
-      this.analysisProgress += 10;
-      if (this.analysisProgress >= 100) {
-        clearInterval(timer);
+  private startRealAnalysis(): void {
+    this.analysisProgress = 10;
+    const progressTimer = setInterval(() => {
+      if (this.analysisProgress < 80) {
+        this.analysisProgress += 5;
       }
-    }, 300);
+    }, 500);
+
+    uploadAndAnalyzeTongueImage(this.capturedImageUri, this.imageSource)
+      .then((result: TongueImageRecord) => {
+        clearInterval(progressTimer);
+        this.analysisProgress = 100;
+
+        setTimeout(() => {
+          this.selectedImage = result;
+          this.viewMode = TongueImageViewMode.DETAIL;
+        }, 500);
+      })
+      .catch((error: Error) => {
+        clearInterval(progressTimer);
+        this.analysisError = error.message || '分析失败，请稍后重试';
+        this.analysisProgress = 0;
+      });
   }
 
   // ==================== 分析中 ====================
@@ -659,6 +797,58 @@ export struct TongueImageView {
         .fontColor(WARM_ACCENT)
         .textAlign(TextAlign.Center)
         .width('100%')
+
+      // 错误提示
+      if (this.analysisError.length > 0) {
+        Column({ space: 10 }) {
+          Text('❌ 分析失败')
+            .fontSize(15)
+            .fontColor('#E53935')
+            .fontWeight(FontWeight.Medium)
+          Text(this.analysisError)
+            .fontSize(13)
+            .fontColor(MUTED_TEXT)
+            .textAlign(TextAlign.Center)
+            .lineHeight(20)
+
+          Row({ space: 12 }) {
+            Button() {
+              Text('重新分析')
+                .fontSize(14)
+                .fontColor(Color.White)
+            }
+            .height(40)
+            .backgroundColor(BRAND_GREEN)
+            .borderRadius(20)
+            .layoutWeight(1)
+            .onClick(() => {
+              this.analysisError = '';
+              this.analysisProgress = 10;
+              this.startRealAnalysis();
+            })
+
+            Button() {
+              Text('返回')
+                .fontSize(14)
+                .fontColor(MUTED_TEXT)
+            }
+            .height(40)
+            .backgroundColor(Color.Transparent)
+            .border({ width: 1, color: '#E0E0E0' })
+            .borderRadius(20)
+            .layoutWeight(1)
+            .onClick(() => {
+              this.viewMode = TongueImageViewMode.PREVIEW;
+            })
+          }
+          .width('100%')
+          .margin({ top: 8 })
+        }
+        .width('100%')
+        .padding(16)
+        .backgroundColor('#FFF2F2')
+        .borderRadius(CARD_RADIUS)
+      }
     }
     .width('100%')
   }
@@ -689,15 +879,23 @@ export struct TongueImageView {
   DetailView(image: TongueImageRecord) {
     Column({ space: 16 }) {
       // 大图
-      Column() {
-        Text('👅')
-          .fontSize(100)
+      if (image.imageUrl && image.imageUrl.length > 0) {
+        Image(image.imageUrl)
+          .width('100%')
+          .height(300)
+          .borderRadius(CARD_RADIUS)
+          .objectFit(ImageFit.Cover)
+      } else {
+        Column() {
+          Text('👅')
+            .fontSize(100)
+        }
+        .width('100%')
+        .height(300)
+        .backgroundColor('#F5F5F5')
+        .borderRadius(CARD_RADIUS)
+        .justifyContent(FlexAlign.Center)
       }
-      .width('100%')
-      .height(300)
-      .backgroundColor('#F5F5F5')
-      .borderRadius(CARD_RADIUS)
-      .justifyContent(FlexAlign.Center)
 
       // 基本信息
       Column({ space: 10 }) {
@@ -716,7 +914,7 @@ export struct TongueImageView {
 
       // 分析结果
       if (image.analysisResult && image.analysisStatus === TongueAnalysisStatus.SUCCESS) {
-        Column({ space: 12 }) {
+        Column({ space: 14 }) {
           Row() {
             Text('辅助观察结果')
               .fontSize(16)
@@ -731,22 +929,47 @@ export struct TongueImageView {
           }
           .width('100%')
 
-          this.DetailRowItem('舌色', image.analysisResult.color)
-          this.DetailRowItem('舌苔', image.analysisResult.coating)
-          this.DetailRowItem('润燥', image.analysisResult.dryness)
+          // 舌象基本特征
+          Column({ space: 8 }) {
+            Text('舌象特征')
+              .fontSize(14)
+              .fontWeight(FontWeight.Medium)
+              .fontColor(DEEP_TEXT)
 
-          if (image.analysisResult.note) {
-            Column({ space: 4 }) {
-              Text('备注')
+            this.DetailRowItem('舌色', image.analysisResult.color)
+            this.DetailRowItem('舌苔', image.analysisResult.coating)
+            this.DetailRowItem('润燥', image.analysisResult.dryness)
+          }
+          .width('100%')
+          .padding(12)
+          .backgroundColor('#F9FBF9')
+          .borderRadius(10)
+
+          // 体质判断
+          if (image.analysisResult.note && image.analysisResult.note.length > 0) {
+            Column({ space: 8 }) {
+              Row() {
+                Text('💡')
+                  .fontSize(16)
+                Text('中医判断与建议')
+                  .fontSize(14)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor(DEEP_TEXT)
+                  .margin({ left: 6 })
+              }
+              .width('100%')
+
+              Text(image.analysisResult.note)
                 .fontSize(13)
                 .fontColor(MUTED_TEXT)
-              Text(image.analysisResult.note)
-                .fontSize(14)
-                .fontColor(DEEP_TEXT)
                 .lineHeight(22)
+                .width('100%')
             }
             .width('100%')
             .alignItems(HorizontalAlign.Start)
+            .padding(12)
+            .backgroundColor('rgba(76, 175, 80, 0.06)')
+            .borderRadius(10)
           }
 
           Text('⚠️ 以上为 AI 辅助观察结果，仅供参考，不作为诊断依据')
@@ -754,7 +977,7 @@ export struct TongueImageView {
             .fontColor(WARM_ACCENT)
             .width('100%')
             .textAlign(TextAlign.Center)
-            .margin({ top: 8 })
+            .margin({ top: 4 })
         }
         .width('100%')
         .padding(16)
@@ -776,9 +999,21 @@ export struct TongueImageView {
         .backgroundColor(BRAND_GREEN)
         .borderRadius(22)
         .onClick(() => {
-          if (this.onRequestAnalysis) {
-            this.onRequestAnalysis(image.id);
-          }
+          this.viewMode = TongueImageViewMode.ANALYZING;
+          this.analysisProgress = 10;
+          this.analysisError = '';
+          reanalyzeTongueImage(image.id)
+            .then((result: TongueImageRecord) => {
+              this.analysisProgress = 100;
+              setTimeout(() => {
+                this.selectedImage = result;
+                this.viewMode = TongueImageViewMode.DETAIL;
+              }, 500);
+            })
+            .catch((error: Error) => {
+              this.analysisError = error.message || '重新分析失败';
+              this.viewMode = TongueImageViewMode.DETAIL;
+            });
         })
       }
 
@@ -792,10 +1027,15 @@ export struct TongueImageView {
       .height(44)
       .backgroundColor(Color.Transparent)
       .onClick(() => {
-        if (this.onDeleteImage) {
-          this.onDeleteImage(image.id);
-        }
-        this.viewMode = TongueImageViewMode.LIST;
+        deleteTongueImage(image.id)
+          .then((success: boolean) => {
+            this.viewMode = TongueImageViewMode.LIST;
+            this.loadImages();
+          })
+          .catch(() => {
+            this.viewMode = TongueImageViewMode.LIST;
+            this.loadImages();
+          });
       })
     }
     .width('100%')

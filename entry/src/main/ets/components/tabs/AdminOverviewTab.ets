@@ -136,7 +136,7 @@ export struct AdminOverviewTab {
 
   build() {
     Column({ space: 14 }) {
-      Text('管理员总览')
+      Text('概览')
         .fontSize(24)
         .fontWeight(FontWeight.Bold)
         .fontColor(DEEP_TEXT)
@@ -225,7 +225,7 @@ export struct AdminOverviewTab {
 
   private refreshOverview(): void {
     this.isLoading = true;
-    this.feedback = '正在加载管理员总览...';
+    this.feedback = '正在加载概览...';
     this.errorSummary = '';
     let pendingCount = 6;
     let failedCount = 0;

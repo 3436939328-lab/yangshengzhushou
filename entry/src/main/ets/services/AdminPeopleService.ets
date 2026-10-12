@@ -116,7 +116,7 @@ export function buildCreateAdminUserPayload(
     username: username.trim(),
     realName: realName.trim(),
     phone: phone.trim(),
-    password: password.trim().length > 0 ? password.trim() : '123456',
+    password: password.trim(),
     roleCode: roleCode.trim().length > 0 ? roleCode.trim().toUpperCase() : 'USER',
     status: 1
   };
@@ -127,7 +127,7 @@ export function createAdminUser(
   username: string,
   realName: string,
   phone: string,
-  password: string = '123456',
+  password: string = '',
   roleCode: string = 'USER'
 ): Promise<boolean> {
   const body: CreateAdminUserPayload = buildCreateAdminUserPayload(username, realName, phone, password, roleCode);

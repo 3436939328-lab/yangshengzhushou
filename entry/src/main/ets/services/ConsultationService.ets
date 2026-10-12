@@ -9,6 +9,8 @@ interface ApiResponsePayload {
   data?: Object;
 }
 
+interface EmptyBody {}
+
 interface DoctorProfilePayload {
   id?: number;
   userId?: number;
@@ -16,6 +18,10 @@ interface DoctorProfilePayload {
   title?: string;
   specialty?: string;
   introduction?: string;
+  department?: string;
+  avatar?: string;
+  verificationStatus?: string;
+  accepting?: boolean;
 }
 
 interface ConsultationPayload {
@@ -68,6 +74,9 @@ export interface DoctorOption {
   title: string;
   specialty: string;
   introduction: string;
+  department: string;
+  avatar: string;
+  accepting: boolean;
 }
 
 export interface ConsultationThread {
@@ -130,6 +139,33 @@ function requestJson(url: string, method: http.RequestMethod, body?: Object): Pr
     request.destroy();
     return Promise.reject(new Error(normalizeNetworkErrorMessage(error.message)));
   });
+}
+
+export interface DoctorRecommendation {
+  doctorId: string;
+  reason: string;
+  department: string;
+}
+
+export function fetchRecommendedDoctor(): Promise<DoctorRecommendation | null> {
+  return requestJson(buildApiUrl('/api/consultation/recommend-doctor'), http.RequestMethod.GET)
+    .then((payload: string) => {
+      const resp = parseResponse(payload);
+      if (resp.success !== true || !resp.data) {
+        return null;
+      }
+      const data = resp.data as Record<string, Object>;
+      const doctorId = data['doctorId'] ? `${data['doctorId']}` : '';
+      if (!doctorId || doctorId === 'null') {
+        return null;
+      }
+      return {
+        doctorId,
+        reason: data['reason'] ? `${data['reason']}` : '',
+        department: data['department'] ? `${data['department']}` : ''
+      } as DoctorRecommendation;
+    })
+    .catch(() => null);
 }
 
 function normalizeConsultationStatus(status?: number): number {
@@ -211,7 +247,10 @@ export function buildDoctorOptionsFromPayload(payload: string): DoctorOption[] {
       name: item.doctorName ? item.doctorName : '医生',
       title: item.title ? item.title : '',
       specialty: item.specialty ? item.specialty : '',
-      introduction: item.introduction ? item.introduction : ''
+      introduction: item.introduction ? item.introduction : '',
+      department: item.department ? item.department : '',
+      avatar: item.avatar ? item.avatar : '',
+      accepting: item.accepting === true
     };
     return option;
   }).filter((item: DoctorOption) => item.userId.length > 0);
@@ -279,6 +318,47 @@ export function fetchConsultationMessages(consultationId: string): Promise<Consu
     .then((payload: string) => buildConsultationMessagesFromPayload(payload));
 }
 
+export interface UserHealthArchive {
+  realName: string;
+  phone: string;
+  gender: string;
+  age: number;
+  birthday: string;
+  height: number;
+  weight: number;
+  allergyHistory: string;
+  medicalHistory: string;
+  healthGoal: string;
+  constitutionType: string;
+}
+
+export function fetchUserHealthByConsultation(consultationId: string): Promise<UserHealthArchive | null> {
+  return requestJson(buildApiUrl(`/api/consultation/user-health?consultationId=${encodeURIComponent(consultationId)}`), http.RequestMethod.GET)
+    .then((payload: string) => {
+      const resp = parseResponse(payload);
+      if (resp.success !== true || !resp.data) {
+        return null;
+      }
+      const data = resp.data as Object;
+      const user = (data as Record<string, Object>)['user'] as Record<string, Object> | undefined;
+      const archive = (data as Record<string, Object>)['healthArchive'] as Record<string, Object> | undefined;
+      const result: UserHealthArchive = {
+        realName: user && user['realName'] ? `${user['realName']}` : '',
+        phone: user && user['phone'] ? `${user['phone']}` : '',
+        gender: user && user['gender'] ? `${user['gender']}` : '',
+        age: user && user['age'] ? Number(user['age']) : 0,
+        birthday: user && user['birthday'] ? `${user['birthday']}` : '',
+        height: archive && archive['height'] ? Number(archive['height']) : 0,
+        weight: archive && archive['weight'] ? Number(archive['weight']) : 0,
+        allergyHistory: archive && archive['allergyHistory'] ? `${archive['allergyHistory']}` : '',
+        medicalHistory: archive && archive['medicalHistory'] ? `${archive['medicalHistory']}` : '',
+        healthGoal: archive && archive['healthGoal'] ? `${archive['healthGoal']}` : '',
+        constitutionType: archive && archive['constitutionType'] ? `${archive['constitutionType']}` : ''
+      };
+      return result;
+    });
+}
+
 export function createConsultation(
   userId: string,
   doctorId: string,
@@ -323,5 +403,53 @@ export function sendConsultationMessage(consultationId: string, content: string)
       return Promise.reject(new Error(errorMessage));
     }
     return true;
+  });
+}
+
+export function deleteConsultationMessage(messageId: string): Promise<boolean> {
+  const config = getApiConfig();
+  const request = http.createHttp();
+  const url = buildApiUrl(`/api/consultation-message?id=${encodeURIComponent(messageId)}`);
+  return request.request(url, {
+    method: http.RequestMethod.DELETE,
+    header: buildAuthorizedJsonHeaders(),
+    connectTimeout: config.timeoutMs,
+    readTimeout: config.timeoutMs
+  }).then((response: http.HttpResponse) => {
+    request.destroy();
+    if (response.responseCode < 200 || response.responseCode >= 300) {
+      return Promise.reject(new Error(buildHttpFailureText(response.responseCode, `${response.result}`)));
+    }
+    const payload = `${response.result}`;
+    const resp = JSON.parse(payload) as ApiResponsePayload;
+    return resp.success === true;
+  }).catch((error: Error) => {
+    request.destroy();
+    return Promise.reject(new Error(normalizeNetworkErrorMessage(error.message)));
+  });
+}
+
+export function recallConsultationMessage(messageId: string): Promise<boolean> {
+  const config = getApiConfig();
+  const request = http.createHttp();
+  const url = buildApiUrl(`/api/consultation-message/recall?id=${encodeURIComponent(messageId)}`);
+  const body: EmptyBody = {};
+  return request.request(url, {
+    method: http.RequestMethod.PUT,
+    header: buildAuthorizedJsonHeaders(),
+    extraData: JSON.stringify(body),
+    connectTimeout: config.timeoutMs,
+    readTimeout: config.timeoutMs
+  }).then((response: http.HttpResponse) => {
+    request.destroy();
+    if (response.responseCode < 200 || response.responseCode >= 300) {
+      return Promise.reject(new Error(buildHttpFailureText(response.responseCode, `${response.result}`)));
+    }
+    const payload = `${response.result}`;
+    const resp = JSON.parse(payload) as ApiResponsePayload;
+    return resp.success === true;
+  }).catch((error: Error) => {
+    request.destroy();
+    return Promise.reject(new Error(normalizeNetworkErrorMessage(error.message)));
   });
 }

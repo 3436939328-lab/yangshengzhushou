@@ -17,7 +17,7 @@ import {
   buildArchiveSummariesFromProfile,
   buildHealthArchiveSummary
 } from '../../services/HealthDataService';
-import { applyReminder, reconcileReminders, sendTestReminder, formatReminderSummary } from '../../services/NotificationService';
+import { applyReminder, reconcileReminders, formatReminderSummary } from '../../services/NotificationService';
 import {
   HealthProfileRepository,
   createDefaultHealthProfile,
@@ -40,6 +40,8 @@ import { PrivacyStatusCard } from '../profile/PrivacyStatusCard';
 import { ProfileSummary } from '../profile/ProfileSummary';
 import { RecentRecordsList } from '../profile/RecentRecordsList';
 import { TongueNoteForm } from '../profile/TongueNoteForm';
+import { TongueImageView, TongueImageViewMode } from '../profile/TongueImageView';
+import { TongueImageRecord } from '../../model/ProfileModels';
 import { LoadStateNotice } from '../cards/LoadStateNotice';
 import {
   ConsultationThread,
@@ -47,6 +49,14 @@ import {
   fetchConsultationMessages,
   fetchUserConsultations
 } from '../../services/ConsultationService';
+import {
+  UserComplaintItem,
+  fetchMyComplaints,
+  complaintStatusText,
+  categoryText,
+  appealStatusText
+} from '../../services/ComplaintService';
+import { fetchTongueImageList } from '../../services/TongueService';
 
 function copyProfileWithReminders(profile: HealthProfile, reminderPreferences: ReminderPreference[]): HealthProfile {
   return {
@@ -93,6 +103,14 @@ export struct ProfileTab {
   @State consultationMessages: ConsultationMessageItem[] = [];
   @State consultationDetailLoading: boolean = false;
   @State consultationDetailFeedback: string = '';
+  @State myComplaints: UserComplaintItem[] = [];
+  @State myComplaintsLoading: boolean = false;
+  @State myComplaintsFeedback: string = '';
+  // 舌象照片
+  @State tongueImages: TongueImageRecord[] = [];
+  @State tongueImagesLoading: boolean = false;
+  @State tongueImagesError: string = '';
+  @State showTongueImages: boolean = false;
   private profileRepository?: HealthProfileRepository;
 
   aboutToAppear() {
@@ -115,6 +133,8 @@ export struct ProfileTab {
         this.ConsultationRecordsView()
       } else if (this.activeSubPage === 'consultation-detail') {
         this.ConsultationDetailView()
+      } else if (this.activeSubPage === 'myComplaints') {
+        this.MyComplaintsView()
       } else if (this.activeSubPage === 'healthArchive') {
         this.HealthArchiveView()
       } else if (this.activeSubPage === 'reminders') {
@@ -158,6 +178,11 @@ export struct ProfileTab {
         this.MenuItem('我的问诊', '查看问诊记录和医生回复', '💬', () => {
           this.activeSubPage = 'consultation';
           this.loadConsultations();
+        })
+        this.MenuDivider()
+        this.MenuItem('我的投诉', '查看投诉记录和处理结果', '📮', () => {
+          this.activeSubPage = 'myComplaints';
+          this.loadMyComplaints();
         })
         this.MenuDivider()
         this.MenuItem('健康档案', '健康指标、舌象记录、档案摘要', '📋', () => {
@@ -469,10 +494,10 @@ export struct ProfileTab {
     });
   }
 
-  // ==================== 健康档案 ====================
+  // ==================== 我的投诉 ====================
 
   @Builder
-  HealthArchiveView() {
+  MyComplaintsView() {
     Column({ space: 14 }) {
       Row() {
         Text('← 返回')
@@ -480,7 +505,7 @@ export struct ProfileTab {
           .fontColor(BRAND_GREEN)
           .onClick(() => { this.activeSubPage = ''; })
         Blank()
-        Text('健康档案')
+        Text('我的投诉')
           .fontSize(18)
           .fontWeight(FontWeight.Bold)
           .fontColor(DEEP_TEXT)
@@ -488,117 +513,385 @@ export struct ProfileTab {
       }
       .width('100%')
 
-      ProfileSummary({ profile: this.localProfile })
-
-      Column({ space: 10 }) {
-        Text(this.archiveSummaryText())
-          .fontSize(14)
-          .fontColor(MUTED_TEXT)
-          .lineHeight(22)
-        Text(this.weatherAwareProfileText())
+      if (this.myComplaintsFeedback.length > 0) {
+        Text(this.myComplaintsFeedback)
           .fontSize(12)
-          .fontColor(BRAND_GREEN)
-          .lineHeight(18)
+          .fontColor(WARM_ACCENT)
+          .width('100%')
       }
-      .alignItems(HorizontalAlign.Start)
-      .width('100%')
-      .padding(18)
-      .backgroundColor(CARD_BG)
-      .borderRadius(CARD_RADIUS)
 
-      Grid() {
-        ForEach(this.dynamicArchiveSummaries(), (item: ArchiveSummary) => {
-          GridItem() {
-            Column() {
-              Text(item.title)
-                .fontSize(13)
+      if (this.myComplaintsLoading) {
+        Column({ space: 8 }) {
+          Text('加载中...')
+            .fontSize(14)
+            .fontColor(MUTED_TEXT)
+        }
+        .width('100%')
+        .padding({ top: 40 })
+        .alignItems(HorizontalAlign.Center)
+      } else if (this.myComplaints.length === 0) {
+        Column({ space: 12 }) {
+          Text('📮')
+            .fontSize(48)
+          Text('暂无投诉记录')
+            .fontSize(14)
+            .fontColor(MUTED_TEXT)
+          Text('如对问诊服务不满意，可在问诊结束后提交投诉')
+            .fontSize(12)
+            .fontColor(MUTED_TEXT)
+        }
+        .width('100%')
+        .padding({ top: 60 })
+        .alignItems(HorizontalAlign.Center)
+      } else {
+        Scroll() {
+          Column({ space: 12 }) {
+            ForEach(this.myComplaints, (c: UserComplaintItem) => {
+              this.MyComplaintCard(c)
+            }, (c: UserComplaintItem) => `${c.id}`)
+          }
+          .width('100%')
+        }
+        .layoutWeight(1)
+        .scrollBar(BarState.Auto)
+      }
+    }
+    .width('100%')
+    .height('100%')
+    .padding({ left: 14, right: 14, top: 14, bottom: 20 })
+  }
+
+  @Builder
+  MyComplaintCard(c: UserComplaintItem) {
+    Column({ space: 10 }) {
+      // 头部
+      Row({ space: 8 }) {
+        Column()
+          .width(4)
+          .height(16)
+          .backgroundColor(this.getComplaintStatusColor(c.status))
+          .borderRadius(2)
+        Text(`投诉 #${c.id}`)
+          .fontSize(14)
+          .fontWeight(FontWeight.Bold)
+          .fontColor(DEEP_TEXT)
+        Blank()
+        Text(c.createdAt ? c.createdAt.substring(0, 16) : '')
+          .fontSize(11)
+          .fontColor(MUTED_TEXT)
+      }
+      .width('100%')
+
+      // 类别 + 状态标签
+      Row({ space: 6 }) {
+        if (c.category && c.category.length > 0) {
+          Text(categoryText(c.category))
+            .fontSize(11)
+            .fontColor(BRAND_GREEN)
+            .padding({ left: 8, right: 8, top: 2, bottom: 2 })
+            .backgroundColor('#EEF7F1')
+            .borderRadius(10)
+        }
+        Text(complaintStatusText(c.status))
+          .fontSize(11)
+          .fontColor(this.getComplaintStatusColor(c.status))
+          .padding({ left: 8, right: 8, top: 2, bottom: 2 })
+          .backgroundColor(this.getComplaintStatusBgColor(c.status))
+          .borderRadius(10)
+      }
+      .width('100%')
+
+      // 投诉内容
+      Text(c.description)
+        .fontSize(14)
+        .fontColor(DEEP_TEXT)
+        .lineHeight(22)
+        .width('100%')
+
+      // 管理员处理结果
+      if (c.decisionReason && c.decisionReason.length > 0) {
+        Column({ space: 6 }) {
+          Row({ space: 6 }) {
+            Text('📝')
+              .fontSize(13)
+            Text('管理员处理结果')
+              .fontSize(13)
+              .fontWeight(FontWeight.Medium)
+              .fontColor(DEEP_TEXT)
+            Blank()
+            if (c.decisionAt) {
+              Text(c.decisionAt.substring(0, 16))
+                .fontSize(11)
                 .fontColor(MUTED_TEXT)
-              Text(item.value)
-                .fontSize(20)
-                .fontWeight(FontWeight.Bold)
-                .fontColor(DEEP_TEXT)
-                .margin({ top: 8 })
-              Text(item.description)
+            }
+          }
+          .width('100%')
+          Text(c.decisionReason)
+            .fontSize(13)
+            .fontColor(MUTED_TEXT)
+            .lineHeight(20)
+            .width('100%')
+        }
+        .width('100%')
+        .padding(12)
+        .backgroundColor('#F0F7F2')
+        .borderRadius(8)
+      }
+
+      // 医生申诉结果
+      if (c.appeal && c.appeal.status && c.appeal.status !== 'PENDING') {
+        Column({ space: 6 }) {
+          Row({ space: 6 }) {
+            Text('⚖️')
+              .fontSize(13)
+            Text('申诉复核结果')
+              .fontSize(13)
+              .fontWeight(FontWeight.Medium)
+              .fontColor(DEEP_TEXT)
+            Blank()
+            Text(appealStatusText(c.appeal.status))
+              .fontSize(11)
+              .fontColor(BRAND_GREEN)
+              .padding({ left: 8, right: 8, top: 2, bottom: 2 })
+              .backgroundColor('#EEF7F1')
+              .borderRadius(10)
+          }
+          .width('100%')
+          if (c.appeal.resultReason && c.appeal.resultReason.length > 0) {
+            Text(c.appeal.resultReason)
+              .fontSize(13)
+              .fontColor(MUTED_TEXT)
+              .lineHeight(20)
+              .width('100%')
+          }
+          if (c.appeal.reviewedAt) {
+            Text(`复核时间：${c.appeal.reviewedAt.substring(0, 16)}`)
+              .fontSize(11)
+              .fontColor(MUTED_TEXT)
+              .width('100%')
+          }
+        }
+        .width('100%')
+        .padding(12)
+        .backgroundColor('#FFF7E6')
+        .borderRadius(8)
+      }
+    }
+    .width('100%')
+    .padding(14)
+    .backgroundColor(Color.White)
+    .borderRadius(8)
+    .shadow({ radius: 2, color: '#1A000000', offsetX: 0, offsetY: 1 })
+  }
+
+  private getComplaintStatusColor(status: string): string {
+    switch (status) {
+      case 'SUBMITTED': return '#FFA500';
+      case 'REVIEWING': return '#1890FF';
+      case 'NEED_INFO': return '#FA8C16';
+      case 'UPHELD': return '#E54D42';
+      case 'REJECTED': return BRAND_GREEN;
+      case 'MERGED': return MUTED_TEXT;
+      default: return MUTED_TEXT;
+    }
+  }
+
+  private getComplaintStatusBgColor(status: string): string {
+    switch (status) {
+      case 'SUBMITTED': return '#FFF7E6';
+      case 'REVIEWING': return '#E6F4FF';
+      case 'NEED_INFO': return '#FFF1E6';
+      case 'UPHELD': return '#FFEBE9';
+      case 'REJECTED': return '#EEF7F1';
+      case 'MERGED': return '#F0F0F0';
+      default: return '#F0F0F0';
+    }
+  }
+
+  // ==================== 健康档案 ====================
+
+  @Builder
+  HealthArchiveView() {
+    Column({ space: 14 }) {
+      if (this.showTongueImages) {
+        // 舌象照片页面
+        TongueImageView({
+          onBack: () => {
+            this.showTongueImages = false;
+          }
+        })
+      } else {
+        // 健康档案主页面
+        Row() {
+          Text('← 返回')
+            .fontSize(15)
+            .fontColor(BRAND_GREEN)
+            .onClick(() => { this.activeSubPage = ''; })
+          Blank()
+          Text('健康档案')
+            .fontSize(18)
+            .fontWeight(FontWeight.Bold)
+            .fontColor(DEEP_TEXT)
+          Blank()
+        }
+        .width('100%')
+
+        Scroll() {
+          Column({ space: 14 }) {
+            ProfileSummary({ profile: this.localProfile })
+
+            Column({ space: 10 }) {
+              Text(this.archiveSummaryText())
+                .fontSize(14)
+                .fontColor(MUTED_TEXT)
+                .lineHeight(22)
+              Text(this.weatherAwareProfileText())
                 .fontSize(12)
-                .fontColor(MUTED_TEXT)
+                .fontColor(BRAND_GREEN)
                 .lineHeight(18)
-                .margin({ top: 8 })
             }
             .alignItems(HorizontalAlign.Start)
             .width('100%')
-            .height(128)
-            .padding(14)
+            .padding(18)
             .backgroundColor(CARD_BG)
             .borderRadius(CARD_RADIUS)
+
+            Grid() {
+              ForEach(this.dynamicArchiveSummaries(), (item: ArchiveSummary) => {
+                GridItem() {
+                  Column() {
+                    Text(item.title)
+                      .fontSize(13)
+                      .fontColor(MUTED_TEXT)
+                    Text(item.value)
+                      .fontSize(20)
+                      .fontWeight(FontWeight.Bold)
+                      .fontColor(DEEP_TEXT)
+                      .margin({ top: 8 })
+                    Text(item.description)
+                      .fontSize(12)
+                      .fontColor(MUTED_TEXT)
+                      .lineHeight(18)
+                      .margin({ top: 8 })
+                  }
+                  .alignItems(HorizontalAlign.Start)
+                  .width('100%')
+                  .height(128)
+                  .padding(14)
+                  .backgroundColor(CARD_BG)
+                  .borderRadius(CARD_RADIUS)
+                }
+              }, (item: ArchiveSummary) => item.title)
+            }
+            .columnsTemplate('1fr 1fr')
+            .columnsGap(10)
+            .rowsGap(10)
+            .height(266)
+
+            // 舌象照片记录入口
+            Column({ space: 12 }) {
+              Row() {
+                Column() {
+                  Text('👅 舌象照片分析')
+                    .fontSize(15)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(DEEP_TEXT)
+                  Text('拍照上传，AI智能识别舌象特征')
+                    .fontSize(12)
+                    .fontColor(MUTED_TEXT)
+                    .margin({ top: 2 })
+                }
+                .alignItems(HorizontalAlign.Start)
+                .layoutWeight(1)
+
+                Row({ space: 4 }) {
+                  Text(`${this.tongueImages.length}张`)
+                    .fontSize(12)
+                    .fontColor(BRAND_GREEN)
+                  Text('›')
+                    .fontSize(16)
+                    .fontColor(MUTED_TEXT)
+                }
+              }
+              .width('100%')
+            }
+            .width('100%')
+            .padding(16)
+            .backgroundColor(CARD_BG)
+            .borderRadius(CARD_RADIUS)
+            .onClick(() => {
+              this.showTongueImages = true;
+              this.loadTongueImages();
+            })
+
+            TongueNoteForm({
+              onSave: (note: TongueObservationNote) => {
+                if (this.profileRepository) {
+                  return this.profileRepository.saveTongueNote(note).then((profile: HealthProfile) => {
+                    this.applyProfile(profile);
+                    return true;
+                  }).catch(() => { return false; });
+                }
+                return Promise.resolve(false);
+              }
+            })
+
+            HealthIndicatorForm({
+              onSave: (entry: HealthIndicatorEntry) => {
+                if (this.profileRepository) {
+                  return this.profileRepository.saveHealthIndicator(entry).then((profile: HealthProfile) => {
+                    this.applyProfile(profile);
+                    return true;
+                  }).catch(() => { return false; });
+                }
+                return Promise.resolve(false);
+              }
+            })
+
+            RecentRecordsList({
+              profile: this.localProfile,
+              onDeleteIndicator: (recordedAt: string) => {
+                if (this.profileRepository) {
+                  this.profileRepository.deleteHealthIndicator(recordedAt).then((profile: HealthProfile) => {
+                    this.applyProfile(profile);
+                    this.recordActionText = '记录已删除';
+                    this.recordActionFailed = false;
+                  }).catch(() => {
+                    this.recordActionText = '记录删除失败';
+                    this.recordActionFailed = true;
+                  });
+                }
+              },
+              onDeleteTongueNote: (recordedAt: string) => {
+                if (this.profileRepository) {
+                  this.profileRepository.deleteTongueNote(recordedAt).then((profile: HealthProfile) => {
+                    this.applyProfile(profile);
+                    this.recordActionText = '记录已删除';
+                    this.recordActionFailed = false;
+                  }).catch(() => {
+                    this.recordActionText = '记录删除失败';
+                    this.recordActionFailed = true;
+                  });
+                }
+              }
+            })
+
+            if (this.recordActionText.length > 0) {
+              Text(this.recordActionText)
+                .fontSize(12)
+                .fontColor(this.recordActionFailed ? WARM_ACCENT : BRAND_GREEN)
+            }
+
+            this.ModelProfileSuggestionCard()
           }
-        }, (item: ArchiveSummary) => item.title)
+          .width('100%')
+        }
+        .scrollBar(BarState.Auto)
+        .layoutWeight(1)
       }
-      .columnsTemplate('1fr 1fr')
-      .columnsGap(10)
-      .rowsGap(10)
-      .height(266)
-
-      TongueNoteForm({
-        onSave: (note: TongueObservationNote) => {
-          if (this.profileRepository) {
-            return this.profileRepository.saveTongueNote(note).then((profile: HealthProfile) => {
-              this.applyProfile(profile);
-              return true;
-            }).catch(() => { return false; });
-          }
-          return Promise.resolve(false);
-        }
-      })
-
-      HealthIndicatorForm({
-        onSave: (entry: HealthIndicatorEntry) => {
-          if (this.profileRepository) {
-            return this.profileRepository.saveHealthIndicator(entry).then((profile: HealthProfile) => {
-              this.applyProfile(profile);
-              return true;
-            }).catch(() => { return false; });
-          }
-          return Promise.resolve(false);
-        }
-      })
-
-      RecentRecordsList({
-        profile: this.localProfile,
-        onDeleteIndicator: (recordedAt: string) => {
-          if (this.profileRepository) {
-            this.profileRepository.deleteHealthIndicator(recordedAt).then((profile: HealthProfile) => {
-              this.applyProfile(profile);
-              this.recordActionText = '记录已删除';
-              this.recordActionFailed = false;
-            }).catch(() => {
-              this.recordActionText = '记录删除失败';
-              this.recordActionFailed = true;
-            });
-          }
-        },
-        onDeleteTongueNote: (recordedAt: string) => {
-          if (this.profileRepository) {
-            this.profileRepository.deleteTongueNote(recordedAt).then((profile: HealthProfile) => {
-              this.applyProfile(profile);
-              this.recordActionText = '记录已删除';
-              this.recordActionFailed = false;
-            }).catch(() => {
-              this.recordActionText = '记录删除失败';
-              this.recordActionFailed = true;
-            });
-          }
-        }
-      })
-
-      if (this.recordActionText.length > 0) {
-        Text(this.recordActionText)
-          .fontSize(12)
-          .fontColor(this.recordActionFailed ? WARM_ACCENT : BRAND_GREEN)
-      }
-
-      this.ModelProfileSuggestionCard()
     }
     .width('100%')
+    .height('100%')
   }
 
   // ==================== 提醒管理 ====================
@@ -666,7 +959,6 @@ export struct ProfileTab {
       }, (item: ReminderPreference) => item.title)
 
       Row({ space: 10 }) {
-        Button('测试提醒').fontSize(13).enabled(!this.reminderBusy).onClick(() => { this.testReminder(); })
         Button('检查提醒状态').fontSize(13).enabled(!this.reminderBusy).onClick(() => { this.checkSystemReminders(); })
       }
     }
@@ -1090,17 +1382,6 @@ export struct ProfileTab {
     } finally { this.reminderBusy = false; }
   }
 
-  private async testReminder(): Promise<void> {
-    if (this.reminderBusy) return;
-    this.reminderBusy = true;
-    try {
-      await sendTestReminder(this.getUIContext().getHostContext() as common.UIAbilityContext);
-      this.reminderSaveText = '测试提醒将在 10 秒后发出'; this.reminderSaveFailed = false;
-    } catch (error) {
-      this.reminderSaveText = (error as Error).message || '测试提醒设置失败'; this.reminderSaveFailed = true;
-    } finally { this.reminderBusy = false; }
-  }
-
   private weatherAwareProfileText(): string {
     if (this.weatherSuggestionSummary.length > 0) {
       return this.weatherSuggestionSummary;
@@ -1136,6 +1417,32 @@ export struct ProfileTab {
       this.consultations = [];
       this.consultationLoading = false;
       this.consultationFeedback = '加载问诊记录失败，请稍后重试';
+    });
+  }
+
+  private loadTongueImages(): void {
+    this.tongueImagesLoading = true;
+    this.tongueImagesError = '';
+    fetchTongueImageList().then((items: TongueImageRecord[]) => {
+      this.tongueImages = items;
+      this.tongueImagesLoading = false;
+    }).catch((err: Error) => {
+      this.tongueImages = [];
+      this.tongueImagesLoading = false;
+      this.tongueImagesError = err.message || '加载舌象记录失败，请稍后重试';
+    });
+  }
+
+  private loadMyComplaints(): void {
+    this.myComplaintsLoading = true;
+    this.myComplaintsFeedback = '';
+    fetchMyComplaints().then((items: UserComplaintItem[]) => {
+      this.myComplaints = items;
+      this.myComplaintsLoading = false;
+    }).catch(() => {
+      this.myComplaints = [];
+      this.myComplaintsLoading = false;
+      this.myComplaintsFeedback = '加载投诉记录失败，请稍后重试';
     });
   }
 

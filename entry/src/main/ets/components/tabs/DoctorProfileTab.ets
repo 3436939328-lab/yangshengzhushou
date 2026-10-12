@@ -1,3 +1,4 @@
+import { picker } from '@kit.CoreFileKit';
 import {
   BRAND_GREEN,
   CARD_BG,
@@ -6,6 +7,7 @@ import {
   MUTED_TEXT,
   WARM_ACCENT
 } from '../../theme/WellnessTheme';
+import { uploadImage } from '../../services/AssetService';
 import {
   buildDoctorProfileIdentityText,
   buildDoctorProfileSaveFailureText,
@@ -18,6 +20,7 @@ import {
 import {
   DoctorQualificationData,
   DoctorReviewItem,
+  ensureDraft,
   fetchMyQualification,
   resubmitReview,
   submitForReview,
@@ -31,7 +34,8 @@ export struct DoctorProfileTab {
 
   @State profile: DoctorProfileForm = createEmptyDoctorProfile('');
   @State feedback: string = '';
-  @State licenseImageInput: string = '';
+  @State uploadingLicenseImage: boolean = false;
+  @State uploadingAvatar: boolean = false;
   @State reviewId: number = 0;
   @State reviewStatus: string = '';
   @State submitting: boolean = false;
@@ -105,15 +109,88 @@ export struct DoctorProfileTab {
     }
   }
 
-  private addLicenseImageUrl(): void {
-    const url = this.licenseImageInput.trim();
-    if (url.length === 0) return;
-    const existing = this.profile.licenseImageUrls.length > 0
-      ? this.profile.licenseImageUrls.split(',').filter((s: string) => s.trim().length > 0)
-      : [];
-    existing.push(url);
-    this.updateProfile({ licenseImageUrls: existing.join(',') });
-    this.licenseImageInput = '';
+  private async pickAvatarImage(): Promise<void> {
+    if (this.uploadingAvatar) return;
+    try {
+      const photoViewPicker = new picker.PhotoViewPicker();
+      const selectOption: picker.PhotoSelectOptions = {
+        MIMEType: picker.PhotoViewMIMETypes.IMAGE_TYPE,
+        maxSelectNumber: 1
+      };
+      const result = await photoViewPicker.select(selectOption);
+      if (result.photoUris.length > 0) {
+        this.uploadAvatar(result.photoUris[0]);
+      }
+    } catch {
+      this.feedback = '选择图片失败';
+    }
+  }
+
+  private uploadAvatar(uri: string): void {
+    this.uploadingAvatar = true;
+    this.feedback = '头像上传中...';
+    uploadImage(uri)
+      .then((result) => {
+        this.updateProfile({ avatar: result.imageUrl });
+        this.uploadingAvatar = false;
+        this.feedback = '头像上传成功';
+      })
+      .catch((err: Error) => {
+        this.uploadingAvatar = false;
+        this.feedback = `头像上传失败: ${err.message}`;
+      });
+  }
+
+  private async pickLicenseImage(): Promise<void> {
+    if (this.uploadingLicenseImage) return;
+    try {
+      const photoViewPicker = new picker.PhotoViewPicker();
+      const selectOption: picker.PhotoSelectOptions = {
+        MIMEType: picker.PhotoViewMIMETypes.IMAGE_TYPE,
+        maxSelectNumber: 9
+      };
+      const result = await photoViewPicker.select(selectOption);
+      if (result.photoUris.length > 0) {
+        this.uploadLicenseImages(result.photoUris);
+      }
+    } catch {
+      this.feedback = '选择图片失败';
+    }
+  }
+
+  private uploadLicenseImages(uris: string[]): void {
+    this.uploadingLicenseImage = true;
+    this.feedback = `上传中 (0/${uris.length})...`;
+    let uploaded = 0;
+    let failed = 0;
+    const uploadNext = () => {
+      if (uploaded + failed >= uris.length) {
+        this.uploadingLicenseImage = false;
+        if (failed > 0) {
+          this.feedback = `${uploaded} 张上传成功，${failed} 张失败`;
+        } else {
+          this.feedback = `${uploaded} 张上传成功`;
+        }
+        return;
+      }
+      const index = uploaded + failed;
+      uploadImage(uris[index])
+        .then((result) => {
+          const existing = this.profile.licenseImageUrls.length > 0
+            ? this.profile.licenseImageUrls.split(',').filter((s: string) => s.trim().length > 0)
+            : [];
+          existing.push(result.imageUrl);
+          this.updateProfile({ licenseImageUrls: existing.join(',') });
+          uploaded += 1;
+          this.feedback = `上传中 (${uploaded}/${uris.length})...`;
+          uploadNext();
+        })
+        .catch((err: Error) => {
+          failed += 1;
+          uploadNext();
+        });
+    };
+    uploadNext();
   }
 
   private removeLicenseImageUrl(url: string): void {
@@ -211,19 +288,40 @@ export struct DoctorProfileTab {
         .fontWeight(FontWeight.Bold)
         .fontColor(DEEP_TEXT)
 
-      if (this.profile.avatar.length > 0) {
-        Image(this.profile.avatar)
-          .width(80)
-          .height(80)
-          .borderRadius(40)
-          .objectFit(ImageFit.Cover)
-          .margin({ bottom: 8 })
-      }
+      Row({ space: 12 }) {
+        if (this.profile.avatar.length > 0) {
+          Image(this.profile.avatar)
+            .width(64)
+            .height(64)
+            .borderRadius(32)
+            .objectFit(ImageFit.Cover)
+        } else {
+          Column() {
+            Text('📷')
+              .fontSize(22)
+            Text('点击上传')
+              .fontSize(11)
+              .fontColor(MUTED_TEXT)
+          }
+          .width(64)
+          .height(64)
+          .borderRadius(32)
+          .backgroundColor('#F5F5F5')
+          .justifyContent(FlexAlign.Center)
+          .onClick(() => { this.pickAvatarImage(); })
+        }
 
-      TextInput({ placeholder: '头像图片URL', text: this.profile.avatar })
-        .height(42)
-        .fontSize(14)
-        .onChange((value: string) => { this.updateProfile({ avatar: value }); })
+        Button(this.uploadingAvatar ? '上传中...' : '从相册选择头像')
+          .height(38)
+          .fontSize(13)
+          .fontColor(BRAND_GREEN)
+          .backgroundColor('#EEF7F1')
+          .border({ width: 1, color: BRAND_GREEN })
+          .borderRadius(CARD_RADIUS)
+          .enabled(!this.uploadingAvatar)
+          .onClick(() => { this.pickAvatarImage(); })
+      }
+      .width('100%')
 
       TextInput({ placeholder: '医生姓名', text: this.profile.doctorName })
         .height(42)
@@ -339,48 +437,54 @@ export struct DoctorProfileTab {
         .fontColor(DEEP_TEXT)
         .fontWeight(FontWeight.Medium)
 
+      Button() {
+        Row({ space: 8 }) {
+          Text('+')
+            .fontSize(18)
+            .fontColor(BRAND_GREEN)
+          Text(this.uploadingLicenseImage ? '上传中...' : '从相册选择照片')
+            .fontSize(14)
+            .fontColor(BRAND_GREEN)
+        }
+      }
+      .width('100%')
+      .height(48)
+      .backgroundColor('#EEF7F1')
+      .border({ width: 1, color: BRAND_GREEN, style: BorderStyle.Dashed })
+      .borderRadius(CARD_RADIUS)
+      .enabled(!this.uploadingLicenseImage)
+      .onClick(() => { this.pickLicenseImage(); })
+
       if (this.licenseImageUrlList().length > 0) {
-        Column({ space: 8 }) {
-          ForEach(this.licenseImageUrlList(), (url: string) => {
-            Row({ space: 8 }) {
+        Flex({ wrap: FlexWrap.Wrap }) {
+          ForEach(this.licenseImageUrlList(), (url: string, index: number) => {
+            Stack({ alignContent: Alignment.TopEnd }) {
               Image(url)
-                .width(50)
-                .height(50)
+                .width(80)
+                .height(80)
                 .borderRadius(8)
                 .objectFit(ImageFit.Cover)
-              Text(url)
-                .fontSize(12)
-                .fontColor(MUTED_TEXT)
-                .layoutWeight(1)
-                .maxLines(1)
-                .textOverflow({ overflow: TextOverflow.Ellipsis })
-              Text('删除')
-                .fontSize(12)
-                .fontColor(WARM_ACCENT)
+                .margin({ right: 8, bottom: 8 })
+              Text('×')
+                .fontSize(14)
+                .fontColor(Color.White)
+                .width(20)
+                .height(20)
+                .textAlign(TextAlign.Center)
+                .backgroundColor('rgba(0,0,0,0.5)')
+                .borderRadius(10)
+                .margin({ top: 2, right: 10 })
                 .onClick(() => { this.removeLicenseImageUrl(url); })
             }
-            .width('100%')
-          }, (url: string) => url)
+            .width(80)
+            .height(80)
+            .margin({ right: 8, bottom: 8 })
+          }, (url: string, index: number) => `${index}-${url}`)
         }
         .width('100%')
       }
 
-      Row({ space: 8 }) {
-        TextInput({ placeholder: '粘贴资质照片URL', text: this.licenseImageInput })
-          .height(42)
-          .fontSize(14)
-          .layoutWeight(1)
-          .onChange((value: string) => { this.licenseImageInput = value; })
-        Button('添加')
-          .height(42)
-          .fontColor('#FFFFFF')
-          .backgroundColor(BRAND_GREEN)
-          .borderRadius(CARD_RADIUS)
-          .onClick(() => { this.addLicenseImageUrl(); })
-      }
-      .width('100%')
-
-      Text('提示：可通过文件上传服务获取图片URL，或直接粘贴网络图片地址。')
+      Text('支持 jpg、png、gif、webp 等格式，最多上传 9 张。')
         .fontSize(11)
         .fontColor(MUTED_TEXT)
         .width('100%')
@@ -527,46 +631,72 @@ export struct DoctorProfileTab {
       return;
     }
     this.submitting = true;
-    this.feedback = '正在保存草稿...';
+    this.feedback = '正在保存资料...';
     saveDoctorProfile(this.profile).then((saved: boolean) => {
       if (!saved) {
         this.submitting = false;
-        this.feedback = '保存草稿失败';
+        this.feedback = '保存资料失败';
         return;
       }
+      this.feedback = '正在提交审核...';
       if (this.reviewId <= 0) {
-        // 还没有 review 记录，提示用户先确保草稿创建
-        this.submitting = false;
-        this.feedback = '请稍后重试或重新进入页面';
-        return;
+        ensureDraft().then((review: DoctorReviewItem) => {
+          this.reviewId = review.id ? review.id : 0;
+          this.reviewStatus = review.status ? review.status : '';
+          if (this.reviewId <= 0) {
+            this.submitting = false;
+            this.feedback = '创建审核记录失败，请重试';
+            return;
+          }
+          this.doSubmitDraft(this.reviewId);
+        }).catch((error: Error) => {
+          this.submitting = false;
+          this.feedback = error.message ? error.message : '创建审核记录失败';
+        });
+      } else {
+        this.doSubmitDraft(this.reviewId);
       }
-      submitForReview(this.reviewId).then((updated: DoctorReviewItem) => {
-        this.submitting = false;
-        this.reviewStatus = updated.status ? updated.status : 'PENDING';
-        this.updateProfile({ verificationStatus: this.reviewStatus });
-        this.feedback = '已提交审核，请等待管理员审核';
-      }).catch((error: Error) => {
-        this.submitting = false;
-        this.feedback = error.message ? error.message : '提交审核失败';
-      });
     }).catch((error: Error) => {
       this.submitting = false;
       this.feedback = buildDoctorProfileSaveFailureText(error.message);
     });
   }
 
-  private doResubmit(): void {
-    if (this.submitting) return;
-    this.submitting = true;
-    this.feedback = '正在重新提交...';
-    resubmitReview().then((updated: DoctorReviewItem) => {
+  private doSubmitDraft(reviewId: number): void {
+    submitForReview(reviewId).then((updated: DoctorReviewItem) => {
       this.submitting = false;
       this.reviewStatus = updated.status ? updated.status : 'PENDING';
       this.updateProfile({ verificationStatus: this.reviewStatus });
-      this.feedback = '已重新提交审核';
+      this.feedback = '已提交审核，请等待管理员审核';
     }).catch((error: Error) => {
       this.submitting = false;
-      this.feedback = error.message ? error.message : '重新提交失败';
+      this.feedback = error.message ? error.message : '提交审核失败';
+    });
+  }
+
+  private doResubmit(): void {
+    if (this.submitting) return;
+    this.submitting = true;
+    this.feedback = '正在保存资料...';
+    saveDoctorProfile(this.profile).then((saved: boolean) => {
+      if (!saved) {
+        this.submitting = false;
+        this.feedback = '保存资料失败';
+        return;
+      }
+      this.feedback = '正在重新提交...';
+      resubmitReview().then((updated: DoctorReviewItem) => {
+        this.submitting = false;
+        this.reviewStatus = updated.status ? updated.status : 'PENDING';
+        this.updateProfile({ verificationStatus: this.reviewStatus });
+        this.feedback = '已重新提交审核';
+      }).catch((error: Error) => {
+        this.submitting = false;
+        this.feedback = error.message ? error.message : '重新提交失败';
+      });
+    }).catch((error: Error) => {
+      this.submitting = false;
+      this.feedback = buildDoctorProfileSaveFailureText(error.message);
     });
   }
 

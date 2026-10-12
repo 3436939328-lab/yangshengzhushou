@@ -7,6 +7,7 @@ import { QuickActionView } from '../components/QuickActionView';
 import { cancelUserReminders } from '../services/NotificationService';
 import { AdminAssistantLogsTab } from '../components/tabs/AdminAssistantLogsTab';
 import { AdminConsultationsTab } from '../components/tabs/AdminConsultationsTab';
+import { AdminComplaintsTab } from '../components/tabs/AdminComplaintsTab';
 import { AdminOverviewTab } from '../components/tabs/AdminOverviewTab';
 import { AdminPeopleTab } from '../components/tabs/AdminPeopleTab';
 import { AdminDoctorReviewTab } from '../components/admin/AdminDoctorReviewTab';
@@ -17,13 +18,17 @@ import { AssistantTab } from '../components/tabs/AssistantTab';
 import { DataTab } from '../components/tabs/DataTab';
 import { FamilyTab } from '../components/tabs/FamilyTab';
 import { DoctorConsultationTab } from '../components/tabs/DoctorConsultationTab';
+import { DoctorComplaintTab } from '../components/tabs/DoctorComplaintTab';
 import { DoctorProfileTab } from '../components/tabs/DoctorProfileTab';
+import { DoctorWorkbenchTab } from '../components/tabs/DoctorWorkbenchTab';
+import { DoctorPatientTab } from '../components/tabs/DoctorPatientTab';
+import { DoctorMeTab } from '../components/tabs/DoctorMeTab';
 import { DoctorRegistrationView } from '../components/doctor/DoctorRegistrationView';
 import { HomeTab } from '../components/tabs/HomeTab';
 import { ProfileTab } from '../components/tabs/ProfileTab';
 import { UserConsultationTab } from '../components/tabs/UserConsultationTab';
 import { WellnessTabBar } from '../components/TabBar';
-import { BRAND_GREEN, CARD_BG, MUTED_TEXT } from '../theme/WellnessTheme';
+import { BRAND_GREEN, CARD_BG, DEEP_TEXT, MUTED_TEXT } from '../theme/WellnessTheme';
 import { SolarTermInfo, SuggestionResult, WeatherWellness, WellnessPlan, WellnessPlanItem } from '../model/WellnessModels';
 import {
   AuthSession,
@@ -95,6 +100,8 @@ struct Index {
   @State showHealthForm: boolean = false;
   @State showTongueView: boolean = false;
   @State showDoctorRegistration: boolean = false;
+  // 医生端"我的"子页面：''=主页 'profile'=资料 'complaints'=投诉 'ratings'=评价 'rewards'=积分
+  @State doctorMeSubPage: string = '';
   private calendarTimer: number = -1;
 
   private dashboard: WellnessDashboardData = createWellnessDashboardData();
@@ -275,12 +282,7 @@ struct Index {
                 }
                 .width('100%')
                 TongueImageView({
-                  images: [] as TongueImageRecord[],
-                  isLoading: false,
-                  onBack: () => { this.showTongueView = false; },
-                  onUploadImage: (uri: string, source: 'CAMERA' | 'ALBUM') => {
-                    this.showTongueView = false;
-                  }
+                  onBack: () => { this.showTongueView = false; }
                 })
               }
               .width('100%')
@@ -382,16 +384,164 @@ struct Index {
           } else if (this.currentTabKey() === 'consultation') {
             UserConsultationTab({
               userId: this.authUserId(),
-              userName: this.currentProfile.displayName,
-              userPhone: this.authPhoneText(),
+              userName: this.authDisplayName(),
+        userPhone: this.authPhoneText(),
               profile: this.currentProfile
             })
           } else if (this.currentTabKey() === 'doctorWorkbench') {
-            DoctorConsultationTab({ doctorId: this.authUserId(), title: '医生工作台' })
+            DoctorWorkbenchTab({
+              onNavigateTab: (tabKey: string) => {
+                this.doctorNavigateToTab(tabKey);
+              }
+            })
           } else if (this.currentTabKey() === 'doctorConsultation') {
-            DoctorConsultationTab({ doctorId: this.authUserId(), title: '医生问诊' })
-          } else if (this.currentTabKey() === 'doctorProfile') {
-            DoctorProfileTab({ userId: this.authUserId() })
+            DoctorConsultationTab({ doctorId: this.authUserId(), title: '我的问诊' })
+          } else if (this.currentTabKey() === 'doctorPatient') {
+            DoctorPatientTab({
+              doctorId: this.authUserId(),
+              onOpenConsultation: (consultationId: string) => {
+                // 跳转到问诊Tab
+                this.currentTab = resolveAuthorizedTabIndex(this.primaryRole(), 'doctorConsultation');
+              }
+            })
+          } else if (this.currentTabKey() === 'doctorMe') {
+            if (this.doctorMeSubPage === 'profile') {
+              // 医生资料编辑页
+              Column() {
+                Row() {
+                  Text('←')
+                    .fontSize(20)
+                    .fontColor(DEEP_TEXT)
+                    .onClick(() => { this.doctorMeSubPage = ''; })
+                  Text('医生资料')
+                    .fontSize(17)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(DEEP_TEXT)
+                    .margin({ left: 8 })
+                  Blank()
+                }
+                .width('100%')
+                .height(48)
+                .padding({ left: 16, right: 16 })
+
+                Scroll() {
+                  DoctorProfileTab({ userId: this.authUserId() })
+                    .width('100%')
+                }
+                .layoutWeight(1)
+                .scrollBar(BarState.Auto)
+              }
+              .width('100%')
+              .height('100%')
+              .backgroundColor('#F6F8F5')
+            } else if (this.doctorMeSubPage === 'complaints') {
+              // 投诉与申诉页
+              Column() {
+                Row() {
+                  Text('←')
+                    .fontSize(20)
+                    .fontColor(DEEP_TEXT)
+                    .onClick(() => { this.doctorMeSubPage = ''; })
+                  Text('投诉与申诉')
+                    .fontSize(17)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(DEEP_TEXT)
+                    .margin({ left: 8 })
+                  Blank()
+                }
+                .width('100%')
+                .height(48)
+                .padding({ left: 16, right: 16 })
+
+                DoctorComplaintTab({ doctorId: this.authUserId() })
+                  .layoutWeight(1)
+              }
+              .width('100%')
+              .height('100%')
+              .backgroundColor('#F6F8F5')
+            } else if (this.doctorMeSubPage === 'ratings') {
+              // 我的评价页（暂时用占位，后续可完善）
+              Column() {
+                Row() {
+                  Text('←')
+                    .fontSize(20)
+                    .fontColor(DEEP_TEXT)
+                    .onClick(() => { this.doctorMeSubPage = ''; })
+                  Text('我的评价')
+                    .fontSize(17)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(DEEP_TEXT)
+                    .margin({ left: 8 })
+                  Blank()
+                }
+                .width('100%')
+                .height(48)
+                .padding({ left: 16, right: 16 })
+
+                Column({ space: 8 }) {
+                  Text('功能开发中')
+                    .fontSize(16)
+                    .fontColor(DEEP_TEXT)
+                    .fontWeight(FontWeight.Bold)
+                  Text('患者评价功能即将上线，敬请期待')
+                    .fontSize(13)
+                    .fontColor(MUTED_TEXT)
+                }
+                .layoutWeight(1)
+                .width('100%')
+                .alignItems(HorizontalAlign.Center)
+                .justifyContent(FlexAlign.Center)
+              }
+              .width('100%')
+              .height('100%')
+              .backgroundColor('#F6F8F5')
+            } else if (this.doctorMeSubPage === 'rewards') {
+              // 积分奖励页（暂时用占位，后续可完善）
+              Column() {
+                Row() {
+                  Text('←')
+                    .fontSize(20)
+                    .fontColor(DEEP_TEXT)
+                    .onClick(() => { this.doctorMeSubPage = ''; })
+                  Text('积分奖励')
+                    .fontSize(17)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(DEEP_TEXT)
+                    .margin({ left: 8 })
+                  Blank()
+                }
+                .width('100%')
+                .height(48)
+                .padding({ left: 16, right: 16 })
+
+                Column({ space: 8 }) {
+                  Text('功能开发中')
+                    .fontSize(16)
+                    .fontColor(DEEP_TEXT)
+                    .fontWeight(FontWeight.Bold)
+                  Text('医生积分奖励功能即将上线')
+                    .fontSize(13)
+                    .fontColor(MUTED_TEXT)
+                }
+                .layoutWeight(1)
+                .width('100%')
+                .alignItems(HorizontalAlign.Center)
+                .justifyContent(FlexAlign.Center)
+              }
+              .width('100%')
+              .height('100%')
+              .backgroundColor('#F6F8F5')
+            } else {
+              // "我的"主页
+              DoctorMeTab({
+                userId: this.authUserId(),
+                onOpenProfile: () => { this.doctorMeSubPage = 'profile'; },
+                onOpenComplaints: () => { this.doctorMeSubPage = 'complaints'; },
+                onOpenRatings: () => { this.doctorMeSubPage = 'ratings'; },
+                onOpenRewards: () => { this.doctorMeSubPage = 'rewards'; },
+                onLogout: () => { this.logout(); }
+              })
+            }
           } else if (this.currentTabKey() === 'adminOverview') {
             AdminOverviewTab()
           } else if (this.currentTabKey() === 'adminPeople') {
@@ -402,6 +552,8 @@ struct Index {
             AdminDoctorReviewTab()
           } else if (this.currentTabKey() === 'adminConsultations') {
             AdminConsultationsTab()
+          } else if (this.currentTabKey() === 'adminComplaints') {
+            AdminComplaintsTab()
           }
         }
         .padding({ left: 18, right: 18, bottom: 96 })
@@ -620,6 +772,16 @@ struct Index {
     return '';
   }
 
+  private authDisplayName(): string {
+    if (this.authSession !== null) {
+      const name = this.authSession.user.realName;
+      if (name && name.length > 0) {
+        return name;
+      }
+    }
+    return this.currentProfile.displayName;
+  }
+
   private primaryRole(): string {
     if (this.authSession === null) {
       return 'USER';
@@ -653,7 +815,18 @@ struct Index {
     if (finalKey !== 'health' && this.showHealthForm) {
       this.showHealthForm = false;
     }
+    // 切换Tab时重置医生端"我的"子页面
+    if (finalKey !== 'doctorMe' && this.doctorMeSubPage !== '') {
+      this.doctorMeSubPage = '';
+    }
     return finalKey;
+  }
+
+  private doctorNavigateToTab(tabKey: string): void {
+    const index = resolveAuthorizedTabIndex(this.primaryRole(), tabKey);
+    if (index >= 0) {
+      this.currentTab = index;
+    }
   }
 
 

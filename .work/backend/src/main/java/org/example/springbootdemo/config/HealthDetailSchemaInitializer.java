@@ -67,6 +67,41 @@ public class HealthDetailSchemaInitializer implements CommandLineRunner {
                 )
                 """);
 
+        // 舌象图片记录表
+        jdbcTemplate.execute("""
+                CREATE TABLE IF NOT EXISTS tongue_image (
+                  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                  user_id BIGINT NOT NULL,
+                  asset_id VARCHAR(100) NULL,
+                  image_url VARCHAR(500) NULL,
+                  thumbnail_url VARCHAR(500) NULL,
+                  source VARCHAR(20) NOT NULL DEFAULT 'CAMERA',
+                  quality_status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+                  quality_note VARCHAR(200) NULL,
+                  analysis_status VARCHAR(20) NOT NULL DEFAULT 'PENDING_UPLOAD',
+                  analysis_id VARCHAR(64) NULL,
+                  model_version VARCHAR(50) NULL,
+                  tongue_color VARCHAR(50) NULL,
+                  tongue_coating VARCHAR(50) NULL,
+                  tongue_dryness VARCHAR(50) NULL,
+                  tongue_shape VARCHAR(50) NULL,
+                  coating_thickness VARCHAR(50) NULL,
+                  coating_color VARCHAR(50) NULL,
+                  constitution_suggestion VARCHAR(500) NULL,
+                  health_advice VARCHAR(1000) NULL,
+                  warning_signs VARCHAR(500) NULL,
+                  analysis_note VARCHAR(500) NULL,
+                  captured_at VARCHAR(30) NULL,
+                  uploaded_at VARCHAR(30) NULL,
+                  analyzed_at VARCHAR(30) NULL,
+                  create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                  is_deleted TINYINT NOT NULL DEFAULT 0,
+                  INDEX idx_tongue_image_user (user_id),
+                  INDEX idx_tongue_image_status (analysis_status),
+                  CONSTRAINT fk_tongue_image_user FOREIGN KEY (user_id) REFERENCES sys_user(id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                """);
+
         String schemaName = jdbcTemplate.queryForObject("select database()", String.class);
         if (schemaName == null || schemaName.isBlank()) {
             return;
