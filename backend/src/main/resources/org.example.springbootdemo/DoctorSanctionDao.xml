@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.example.springbootdemo.dao.DoctorSanctionDao">
+  <resultMap id="BaseResultMap" type="org.example.springbootdemo.bean.DoctorSanction">
+    <id column="id" property="id" jdbcType="BIGINT"/>
+    <result column="event_id" property="eventId" jdbcType="BIGINT"/>
+    <result column="decision_id" property="decisionId" jdbcType="BIGINT"/>
+    <result column="doctor_id" property="doctorId" jdbcType="BIGINT"/>
+    <result column="type" property="type" jdbcType="VARCHAR"/>
+    <result column="scope" property="scope" jdbcType="VARCHAR"/>
+    <result column="status" property="status" jdbcType="VARCHAR"/>
+    <result column="starts_at" property="startsAt" jdbcType="TIMESTAMP"/>
+    <result column="ends_at" property="endsAt" jdbcType="TIMESTAMP"/>
+    <result column="issuer_id" property="issuerId" jdbcType="BIGINT"/>
+    <result column="approver_id" property="approverId" jdbcType="BIGINT"/>
+    <result column="reason" property="reason" jdbcType="VARCHAR"/>
+    <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
+  </resultMap>
+  <sql id="Base_Column_List">id, event_id, decision_id, doctor_id, type, scope, status, starts_at, ends_at, issuer_id, approver_id, reason, created_at</sql>
+  <insert id="insertSelective" parameterType="org.example.springbootdemo.bean.DoctorSanction" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    insert into doctor_sanction
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="eventId != null">event_id,</if>
+      <if test="decisionId != null">decision_id,</if>
+      <if test="doctorId != null">doctor_id,</if>
+      <if test="type != null">type,</if>
+      <if test="scope != null">scope,</if>
+      <if test="status != null">status,</if>
+      <if test="startsAt != null">starts_at,</if>
+      <if test="endsAt != null">ends_at,</if>
+      <if test="issuerId != null">issuer_id,</if>
+      <if test="approverId != null">approver_id,</if>
+      <if test="reason != null">reason,</if>
+      <if test="createdAt != null">created_at,</if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="eventId != null">#{eventId,jdbcType=BIGINT},</if>
+      <if test="decisionId != null">#{decisionId,jdbcType=BIGINT},</if>
+      <if test="doctorId != null">#{doctorId,jdbcType=BIGINT},</if>
+      <if test="type != null">#{type,jdbcType=VARCHAR},</if>
+      <if test="scope != null">#{scope,jdbcType=VARCHAR},</if>
+      <if test="status != null">#{status,jdbcType=VARCHAR},</if>
+      <if test="startsAt != null">#{startsAt,jdbcType=TIMESTAMP},</if>
+      <if test="endsAt != null">#{endsAt,jdbcType=TIMESTAMP},</if>
+      <if test="issuerId != null">#{issuerId,jdbcType=BIGINT},</if>
+      <if test="approverId != null">#{approverId,jdbcType=BIGINT},</if>
+      <if test="reason != null">#{reason,jdbcType=VARCHAR},</if>
+      <if test="createdAt != null">#{createdAt,jdbcType=TIMESTAMP},</if>
+    </trim>
+  </insert>
+  <update id="updateStatus" parameterType="org.example.springbootdemo.bean.DoctorSanction">
+    update doctor_sanction
+    <set>
+      <if test="status != null">status = #{status,jdbcType=VARCHAR},</if>
+      <if test="approverId != null">approver_id = #{approverId,jdbcType=BIGINT},</if>
+      <if test="endsAt != null">ends_at = #{endsAt,jdbcType=TIMESTAMP},</if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List"/> from doctor_sanction where id = #{id,jdbcType=BIGINT}
+  </select>
+  <select id="selectByEventId" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List"/> from doctor_sanction where event_id = #{eventId,jdbcType=BIGINT} order by id desc
+  </select>
+  <select id="selectActiveByDoctor" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List"/> from doctor_sanction
+    where doctor_id = #{doctorId,jdbcType=BIGINT}
+      and status = 'ACTIVE'
+      and (ends_at is null or ends_at &gt; #{now,jdbcType=TIMESTAMP})
+    order by id desc
+  </select>
+  <select id="selectAllByDoctor" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List"/> from doctor_sanction
+    where doctor_id = #{doctorId,jdbcType=BIGINT}
+    order by created_at desc
+  </select>
+</mapper>

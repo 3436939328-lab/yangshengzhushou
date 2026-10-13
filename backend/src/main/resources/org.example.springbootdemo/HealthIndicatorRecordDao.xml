@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.example.springbootdemo.dao.HealthIndicatorRecordDao">
+  <resultMap id="BaseResultMap" type="org.example.springbootdemo.bean.HealthIndicatorRecord">
+    <id column="id" property="id" jdbcType="BIGINT" />
+    <result column="user_id" property="userId" jdbcType="BIGINT" />
+    <result column="name" property="name" jdbcType="VARCHAR" />
+    <result column="value" property="value" jdbcType="VARCHAR" />
+    <result column="unit" property="unit" jdbcType="VARCHAR" />
+    <result column="recorded_at" property="recordedAt" jdbcType="VARCHAR" />
+    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+  </resultMap>
+
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap">
+    select id, user_id, name, value, unit, recorded_at, create_time
+    from health_indicator_record
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+
+  <select id="selectByUserId" resultMap="BaseResultMap">
+    select id, user_id, name, value, unit, recorded_at, create_time
+    from health_indicator_record
+    where user_id = #{userId,jdbcType=BIGINT}
+    order by id desc
+  </select>
+
+  <delete id="deleteByPrimaryKey">
+    delete from health_indicator_record where id = #{id,jdbcType=BIGINT}
+  </delete>
+
+  <insert id="insertSelective" parameterType="org.example.springbootdemo.bean.HealthIndicatorRecord" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    insert into health_indicator_record
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="userId != null">user_id,</if>
+      <if test="name != null">name,</if>
+      <if test="value != null">value,</if>
+      <if test="unit != null">unit,</if>
+      <if test="recordedAt != null">recorded_at,</if>
+      <if test="createTime != null">create_time,</if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="userId != null">#{userId,jdbcType=BIGINT},</if>
+      <if test="name != null">#{name,jdbcType=VARCHAR},</if>
+      <if test="value != null">#{value,jdbcType=VARCHAR},</if>
+      <if test="unit != null">#{unit,jdbcType=VARCHAR},</if>
+      <if test="recordedAt != null">#{recordedAt,jdbcType=VARCHAR},</if>
+      <if test="createTime != null">#{createTime,jdbcType=TIMESTAMP},</if>
+    </trim>
+  </insert>
+</mapper>

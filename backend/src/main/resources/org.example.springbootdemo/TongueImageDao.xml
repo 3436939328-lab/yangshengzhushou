@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.example.springbootdemo.dao.TongueImageDao">
+  <resultMap id="BaseResultMap" type="org.example.springbootdemo.bean.TongueImage">
+    <id column="id" property="id" jdbcType="BIGINT" />
+    <result column="user_id" property="userId" jdbcType="BIGINT" />
+    <result column="asset_id" property="assetId" jdbcType="VARCHAR" />
+    <result column="image_url" property="imageUrl" jdbcType="VARCHAR" />
+    <result column="thumbnail_url" property="thumbnailUrl" jdbcType="VARCHAR" />
+    <result column="source" property="source" jdbcType="VARCHAR" />
+    <result column="quality_status" property="qualityStatus" jdbcType="VARCHAR" />
+    <result column="quality_note" property="qualityNote" jdbcType="VARCHAR" />
+    <result column="analysis_status" property="analysisStatus" jdbcType="VARCHAR" />
+    <result column="analysis_id" property="analysisId" jdbcType="VARCHAR" />
+    <result column="model_version" property="modelVersion" jdbcType="VARCHAR" />
+    <result column="tongue_color" property="tongueColor" jdbcType="VARCHAR" />
+    <result column="tongue_coating" property="tongueCoating" jdbcType="VARCHAR" />
+    <result column="tongue_dryness" property="tongueDryness" jdbcType="VARCHAR" />
+    <result column="tongue_shape" property="tongueShape" jdbcType="VARCHAR" />
+    <result column="coating_thickness" property="coatingThickness" jdbcType="VARCHAR" />
+    <result column="coating_color" property="coatingColor" jdbcType="VARCHAR" />
+    <result column="constitution_suggestion" property="constitutionSuggestion" jdbcType="VARCHAR" />
+    <result column="health_advice" property="healthAdvice" jdbcType="VARCHAR" />
+    <result column="warning_signs" property="warningSigns" jdbcType="VARCHAR" />
+    <result column="analysis_note" property="analysisNote" jdbcType="VARCHAR" />
+    <result column="captured_at" property="capturedAt" jdbcType="VARCHAR" />
+    <result column="uploaded_at" property="uploadedAt" jdbcType="VARCHAR" />
+    <result column="analyzed_at" property="analyzedAt" jdbcType="VARCHAR" />
+    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+    <result column="is_deleted" property="isDeleted" jdbcType="TINYINT" />
+  </resultMap>
+
+  <sql id="Base_Column_List">
+    id, user_id, asset_id, image_url, thumbnail_url, source, quality_status, quality_note,
+    analysis_status, analysis_id, model_version,
+    tongue_color, tongue_coating, tongue_dryness, tongue_shape, coating_thickness, coating_color,
+    constitution_suggestion, health_advice, warning_signs, analysis_note,
+    captured_at, uploaded_at, analyzed_at, create_time, is_deleted
+  </sql>
+
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List" />
+    from tongue_image
+    where id = #{id,jdbcType=BIGINT} and is_deleted = 0
+  </select>
+
+  <select id="selectByUserId" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List" />
+    from tongue_image
+    where user_id = #{userId,jdbcType=BIGINT} and is_deleted = 0
+    order by id desc
+  </select>
+
+  <insert id="insertSelective" parameterType="org.example.springbootdemo.bean.TongueImage" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    insert into tongue_image
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="userId != null">user_id,</if>
+      <if test="assetId != null">asset_id,</if>
+      <if test="imageUrl != null">image_url,</if>
+      <if test="thumbnailUrl != null">thumbnail_url,</if>
+      <if test="source != null">source,</if>
+      <if test="qualityStatus != null">quality_status,</if>
+      <if test="qualityNote != null">quality_note,</if>
+      <if test="analysisStatus != null">analysis_status,</if>
+      <if test="analysisId != null">analysis_id,</if>
+      <if test="modelVersion != null">model_version,</if>
+      <if test="tongueColor != null">tongue_color,</if>
+      <if test="tongueCoating != null">tongue_coating,</if>
+      <if test="tongueDryness != null">tongue_dryness,</if>
+      <if test="tongueShape != null">tongue_shape,</if>
+      <if test="coatingThickness != null">coating_thickness,</if>
+      <if test="coatingColor != null">coating_color,</if>
+      <if test="constitutionSuggestion != null">constitution_suggestion,</if>
+      <if test="healthAdvice != null">health_advice,</if>
+      <if test="warningSigns != null">warning_signs,</if>
+      <if test="analysisNote != null">analysis_note,</if>
+      <if test="capturedAt != null">captured_at,</if>
+      <if test="uploadedAt != null">uploaded_at,</if>
+      <if test="analyzedAt != null">analyzed_at,</if>
+      <if test="createTime != null">create_time,</if>
+      <if test="isDeleted != null">is_deleted,</if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="userId != null">#{userId,jdbcType=BIGINT},</if>
+      <if test="assetId != null">#{assetId,jdbcType=VARCHAR},</if>
+      <if test="imageUrl != null">#{imageUrl,jdbcType=VARCHAR},</if>
+      <if test="thumbnailUrl != null">#{thumbnailUrl,jdbcType=VARCHAR},</if>
+      <if test="source != null">#{source,jdbcType=VARCHAR},</if>
+      <if test="qualityStatus != null">#{qualityStatus,jdbcType=VARCHAR},</if>
+      <if test="qualityNote != null">#{qualityNote,jdbcType=VARCHAR},</if>
+      <if test="analysisStatus != null">#{analysisStatus,jdbcType=VARCHAR},</if>
+      <if test="analysisId != null">#{analysisId,jdbcType=VARCHAR},</if>
+      <if test="modelVersion != null">#{modelVersion,jdbcType=VARCHAR},</if>
+      <if test="tongueColor != null">#{tongueColor,jdbcType=VARCHAR},</if>
+      <if test="tongueCoating != null">#{tongueCoating,jdbcType=VARCHAR},</if>
+      <if test="tongueDryness != null">#{tongueDryness,jdbcType=VARCHAR},</if>
+      <if test="tongueShape != null">#{tongueShape,jdbcType=VARCHAR},</if>
+      <if test="coatingThickness != null">#{coatingThickness,jdbcType=VARCHAR},</if>
+      <if test="coatingColor != null">#{coatingColor,jdbcType=VARCHAR},</if>
+      <if test="constitutionSuggestion != null">#{constitutionSuggestion,jdbcType=VARCHAR},</if>
+      <if test="healthAdvice != null">#{healthAdvice,jdbcType=VARCHAR},</if>
+      <if test="warningSigns != null">#{warningSigns,jdbcType=VARCHAR},</if>
+      <if test="analysisNote != null">#{analysisNote,jdbcType=VARCHAR},</if>
+      <if test="capturedAt != null">#{capturedAt,jdbcType=VARCHAR},</if>
+      <if test="uploadedAt != null">#{uploadedAt,jdbcType=VARCHAR},</if>
+      <if test="analyzedAt != null">#{analyzedAt,jdbcType=VARCHAR},</if>
+      <if test="createTime != null">#{createTime,jdbcType=TIMESTAMP},</if>
+      <if test="isDeleted != null">#{isDeleted,jdbcType=TINYINT},</if>
+    </trim>
+  </insert>
+
+  <update id="updateByPrimaryKeySelective" parameterType="org.example.springbootdemo.bean.TongueImage">
+    update tongue_image
+    <set>
+      <if test="userId != null">user_id = #{userId,jdbcType=BIGINT},</if>
+      <if test="assetId != null">asset_id = #{assetId,jdbcType=VARCHAR},</if>
+      <if test="imageUrl != null">image_url = #{imageUrl,jdbcType=VARCHAR},</if>
+      <if test="thumbnailUrl != null">thumbnail_url = #{thumbnailUrl,jdbcType=VARCHAR},</if>
+      <if test="source != null">source = #{source,jdbcType=VARCHAR},</if>
+      <if test="qualityStatus != null">quality_status = #{qualityStatus,jdbcType=VARCHAR},</if>
+      <if test="qualityNote != null">quality_note = #{qualityNote,jdbcType=VARCHAR},</if>
+      <if test="analysisStatus != null">analysis_status = #{analysisStatus,jdbcType=VARCHAR},</if>
+      <if test="analysisId != null">analysis_id = #{analysisId,jdbcType=VARCHAR},</if>
+      <if test="modelVersion != null">model_version = #{modelVersion,jdbcType=VARCHAR},</if>
+      <if test="tongueColor != null">tongue_color = #{tongueColor,jdbcType=VARCHAR},</if>
+      <if test="tongueCoating != null">tongue_coating = #{tongueCoating,jdbcType=VARCHAR},</if>
+      <if test="tongueDryness != null">tongue_dryness = #{tongueDryness,jdbcType=VARCHAR},</if>
+      <if test="tongueShape != null">tongue_shape = #{tongueShape,jdbcType=VARCHAR},</if>
+      <if test="coatingThickness != null">coating_thickness = #{coatingThickness,jdbcType=VARCHAR},</if>
+      <if test="coatingColor != null">coating_color = #{coatingColor,jdbcType=VARCHAR},</if>
+      <if test="constitutionSuggestion != null">constitution_suggestion = #{constitutionSuggestion,jdbcType=VARCHAR},</if>
+      <if test="healthAdvice != null">health_advice = #{healthAdvice,jdbcType=VARCHAR},</if>
+      <if test="warningSigns != null">warning_signs = #{warningSigns,jdbcType=VARCHAR},</if>
+      <if test="analysisNote != null">analysis_note = #{analysisNote,jdbcType=VARCHAR},</if>
+      <if test="capturedAt != null">captured_at = #{capturedAt,jdbcType=VARCHAR},</if>
+      <if test="uploadedAt != null">uploaded_at = #{uploadedAt,jdbcType=VARCHAR},</if>
+      <if test="analyzedAt != null">analyzed_at = #{analyzedAt,jdbcType=VARCHAR},</if>
+      <if test="isDeleted != null">is_deleted = #{isDeleted,jdbcType=TINYINT},</if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+
+  <update id="markDeleted">
+    update tongue_image set is_deleted = 1 where id = #{id,jdbcType=BIGINT}
+  </update>
+</mapper>

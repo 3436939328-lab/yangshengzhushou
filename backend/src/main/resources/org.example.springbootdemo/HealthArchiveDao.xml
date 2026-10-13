@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.example.springbootdemo.dao.HealthArchiveDao">
+  <resultMap id="BaseResultMap" type="org.example.springbootdemo.bean.HealthArchive">
+    <id column="id" property="id" jdbcType="BIGINT" />
+    <result column="user_id" property="userId" jdbcType="BIGINT" />
+    <result column="height" property="height" jdbcType="DECIMAL" />
+    <result column="weight" property="weight" jdbcType="DECIMAL" />
+    <result column="allergy_history" property="allergyHistory" jdbcType="VARCHAR" />
+    <result column="medical_history" property="medicalHistory" jdbcType="VARCHAR" />
+    <result column="health_goal" property="healthGoal" jdbcType="VARCHAR" />
+    <result column="constitution_type" property="constitutionType" jdbcType="VARCHAR" />
+    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+  </resultMap>
+
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long">
+    select
+      id, user_id, height, weight, allergy_history, medical_history, health_goal, constitution_type, create_time
+    from health_archive
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+
+  <select id="selectList" resultMap="BaseResultMap">
+    select
+      id, user_id, height, weight, allergy_history, medical_history, health_goal, constitution_type, create_time
+    from health_archive
+    order by id desc
+  </select>
+
+  <select id="selectByUserId" resultMap="BaseResultMap" parameterType="java.lang.Long">
+    select
+      id, user_id, height, weight, allergy_history, medical_history, health_goal, constitution_type, create_time
+    from health_archive
+    where user_id = #{userId,jdbcType=BIGINT}
+    order by id desc
+    limit 1
+  </select>
+
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    delete from health_archive
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+
+  <insert id="insert" parameterType="org.example.springbootdemo.bean.HealthArchive">
+    insert into health_archive (
+      id, user_id, height, weight, allergy_history, medical_history, health_goal, constitution_type, create_time
+    )
+    values (
+      #{id,jdbcType=BIGINT}, #{userId,jdbcType=BIGINT}, #{height,jdbcType=DECIMAL},
+      #{weight,jdbcType=DECIMAL}, #{allergyHistory,jdbcType=VARCHAR}, #{medicalHistory,jdbcType=VARCHAR},
+      #{healthGoal,jdbcType=VARCHAR}, #{constitutionType,jdbcType=VARCHAR}, #{createTime,jdbcType=TIMESTAMP}
+    )
+  </insert>
+
+  <insert id="insertSelective" parameterType="org.example.springbootdemo.bean.HealthArchive">
+    insert into health_archive
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">id,</if>
+      <if test="userId != null">user_id,</if>
+      <if test="height != null">height,</if>
+      <if test="weight != null">weight,</if>
+      <if test="allergyHistory != null">allergy_history,</if>
+      <if test="medicalHistory != null">medical_history,</if>
+      <if test="healthGoal != null">health_goal,</if>
+      <if test="constitutionType != null">constitution_type,</if>
+      <if test="createTime != null">create_time,</if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">#{id,jdbcType=BIGINT},</if>
+      <if test="userId != null">#{userId,jdbcType=BIGINT},</if>
+      <if test="height != null">#{height,jdbcType=DECIMAL},</if>
+      <if test="weight != null">#{weight,jdbcType=DECIMAL},</if>
+      <if test="allergyHistory != null">#{allergyHistory,jdbcType=VARCHAR},</if>
+      <if test="medicalHistory != null">#{medicalHistory,jdbcType=VARCHAR},</if>
+      <if test="healthGoal != null">#{healthGoal,jdbcType=VARCHAR},</if>
+      <if test="constitutionType != null">#{constitutionType,jdbcType=VARCHAR},</if>
+      <if test="createTime != null">#{createTime,jdbcType=TIMESTAMP},</if>
+    </trim>
+  </insert>
+
+  <update id="updateByPrimaryKeySelective" parameterType="org.example.springbootdemo.bean.HealthArchive">
+    update health_archive
+    <set>
+      <if test="userId != null">user_id = #{userId,jdbcType=BIGINT},</if>
+      <if test="height != null">height = #{height,jdbcType=DECIMAL},</if>
+      <if test="weight != null">weight = #{weight,jdbcType=DECIMAL},</if>
+      <if test="allergyHistory != null">allergy_history = #{allergyHistory,jdbcType=VARCHAR},</if>
+      <if test="medicalHistory != null">medical_history = #{medicalHistory,jdbcType=VARCHAR},</if>
+      <if test="healthGoal != null">health_goal = #{healthGoal,jdbcType=VARCHAR},</if>
+      <if test="constitutionType != null">constitution_type = #{constitutionType,jdbcType=VARCHAR},</if>
+      <if test="createTime != null">create_time = #{createTime,jdbcType=TIMESTAMP},</if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+
+  <update id="updateByPrimaryKey" parameterType="org.example.springbootdemo.bean.HealthArchive">
+    update health_archive
+    set
+      user_id = #{userId,jdbcType=BIGINT},
+      height = #{height,jdbcType=DECIMAL},
+      weight = #{weight,jdbcType=DECIMAL},
+      allergy_history = #{allergyHistory,jdbcType=VARCHAR},
+      medical_history = #{medicalHistory,jdbcType=VARCHAR},
+      health_goal = #{healthGoal,jdbcType=VARCHAR},
+      constitution_type = #{constitutionType,jdbcType=VARCHAR},
+      create_time = #{createTime,jdbcType=TIMESTAMP}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+</mapper>

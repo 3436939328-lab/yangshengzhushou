@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.example.springbootdemo.dao.ConsultationDao">
+  <resultMap id="BaseResultMap" type="org.example.springbootdemo.bean.Consultation">
+    <id column="id" property="id" jdbcType="BIGINT" />
+    <result column="user_id" property="userId" jdbcType="BIGINT" />
+    <result column="doctor_id" property="doctorId" jdbcType="BIGINT" />
+    <result column="title" property="title" jdbcType="VARCHAR" />
+    <result column="symptom" property="symptom" jdbcType="VARCHAR" />
+    <result column="description" property="description" jdbcType="VARCHAR" />
+    <result column="status" property="status" jdbcType="TINYINT" />
+    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+    <result column="shared_name" property="sharedName" jdbcType="VARCHAR" />
+    <result column="shared_age" property="sharedAge" jdbcType="INTEGER" />
+    <result column="shared_gender" property="sharedGender" jdbcType="VARCHAR" />
+    <result column="shared_phone" property="sharedPhone" jdbcType="VARCHAR" />
+    <result column="health_snapshot" property="healthSnapshot" jdbcType="LONGVARCHAR" />
+    <result column="tongue_image_urls" property="tongueImageUrls" jdbcType="VARCHAR" />
+  </resultMap>
+
+  <sql id="Base_Column_List">
+    id, user_id, doctor_id, title, symptom, description, status, create_time,
+    shared_name, shared_age, shared_gender, shared_phone, health_snapshot, tongue_image_urls
+  </sql>
+
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long">
+    select <include refid="Base_Column_List" />
+    from consultation
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+
+  <select id="selectList" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List" />
+    from consultation
+    order by id desc
+  </select>
+
+  <select id="selectListByFilter" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List" />
+    from consultation
+    <where>
+      <if test="userId != null">user_id = #{userId,jdbcType=BIGINT}</if>
+      <if test="doctorId != null">and doctor_id = #{doctorId,jdbcType=BIGINT}</if>
+    </where>
+    order by id desc
+  </select>
+
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    delete from consultation
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+
+  <insert id="insert" parameterType="org.example.springbootdemo.bean.Consultation">
+    insert into consultation (id, user_id, doctor_id, title, symptom, description, status, create_time,
+      shared_name, shared_age, shared_gender, shared_phone, health_snapshot, tongue_image_urls)
+    values (
+      #{id,jdbcType=BIGINT}, #{userId,jdbcType=BIGINT}, #{doctorId,jdbcType=BIGINT},
+      #{title,jdbcType=VARCHAR}, #{symptom,jdbcType=VARCHAR}, #{description,jdbcType=VARCHAR}, #{status,jdbcType=TINYINT},
+      #{createTime,jdbcType=TIMESTAMP},
+      #{sharedName,jdbcType=VARCHAR}, #{sharedAge,jdbcType=INTEGER}, #{sharedGender,jdbcType=VARCHAR}, #{sharedPhone,jdbcType=VARCHAR},
+      #{healthSnapshot,jdbcType=LONGVARCHAR}, #{tongueImageUrls,jdbcType=VARCHAR}
+    )
+  </insert>
+
+  <insert id="insertSelective" parameterType="org.example.springbootdemo.bean.Consultation" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    insert into consultation
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">id,</if>
+      <if test="userId != null">user_id,</if>
+      <if test="doctorId != null">doctor_id,</if>
+      <if test="title != null">title,</if>
+      <if test="symptom != null">symptom,</if>
+      <if test="description != null">description,</if>
+      <if test="status != null">status,</if>
+      <if test="createTime != null">create_time,</if>
+      shared_name,
+      <if test="sharedAge != null">shared_age,</if>
+      shared_gender,
+      shared_phone,
+      <if test="healthSnapshot != null">health_snapshot,</if>
+      <if test="tongueImageUrls != null">tongue_image_urls,</if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">#{id,jdbcType=BIGINT},</if>
+      <if test="userId != null">#{userId,jdbcType=BIGINT},</if>
+      <if test="doctorId != null">#{doctorId,jdbcType=BIGINT},</if>
+      <if test="title != null">#{title,jdbcType=VARCHAR},</if>
+      <if test="symptom != null">#{symptom,jdbcType=VARCHAR},</if>
+      <if test="description != null">#{description,jdbcType=VARCHAR},</if>
+      <if test="status != null">#{status,jdbcType=TINYINT},</if>
+      <if test="createTime != null">#{createTime,jdbcType=TIMESTAMP},</if>
+      #{sharedName,jdbcType=VARCHAR},
+      <if test="sharedAge != null">#{sharedAge,jdbcType=INTEGER},</if>
+      #{sharedGender,jdbcType=VARCHAR},
+      #{sharedPhone,jdbcType=VARCHAR},
+      <if test="healthSnapshot != null">#{healthSnapshot,jdbcType=LONGVARCHAR},</if>
+      <if test="tongueImageUrls != null">#{tongueImageUrls,jdbcType=VARCHAR},</if>
+    </trim>
+  </insert>
+
+  <update id="updateByPrimaryKeySelective" parameterType="org.example.springbootdemo.bean.Consultation">
+    update consultation
+    <set>
+      <if test="userId != null">user_id = #{userId,jdbcType=BIGINT},</if>
+      <if test="doctorId != null">doctor_id = #{doctorId,jdbcType=BIGINT},</if>
+      <if test="title != null">title = #{title,jdbcType=VARCHAR},</if>
+      <if test="symptom != null">symptom = #{symptom,jdbcType=VARCHAR},</if>
+      <if test="description != null">description = #{description,jdbcType=VARCHAR},</if>
+      <if test="status != null">status = #{status,jdbcType=TINYINT},</if>
+      <if test="createTime != null">create_time = #{createTime,jdbcType=TIMESTAMP},</if>
+      <if test="sharedName != null">shared_name = #{sharedName,jdbcType=VARCHAR},</if>
+      <if test="sharedAge != null">shared_age = #{sharedAge,jdbcType=INTEGER},</if>
+      <if test="sharedGender != null">shared_gender = #{sharedGender,jdbcType=VARCHAR},</if>
+      <if test="sharedPhone != null">shared_phone = #{sharedPhone,jdbcType=VARCHAR},</if>
+      <if test="healthSnapshot != null">health_snapshot = #{healthSnapshot,jdbcType=LONGVARCHAR},</if>
+      <if test="tongueImageUrls != null">tongue_image_urls = #{tongueImageUrls,jdbcType=VARCHAR},</if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+
+  <update id="updateByPrimaryKey" parameterType="org.example.springbootdemo.bean.Consultation">
+    update consultation
+    set user_id = #{userId,jdbcType=BIGINT},
+      doctor_id = #{doctorId,jdbcType=BIGINT},
+      title = #{title,jdbcType=VARCHAR},
+      symptom = #{symptom,jdbcType=VARCHAR},
+      description = #{description,jdbcType=VARCHAR},
+      status = #{status,jdbcType=TINYINT},
+      create_time = #{createTime,jdbcType=TIMESTAMP},
+      shared_name = #{sharedName,jdbcType=VARCHAR},
+      shared_age = #{sharedAge,jdbcType=INTEGER},
+      shared_gender = #{sharedGender,jdbcType=VARCHAR},
+      shared_phone = #{sharedPhone,jdbcType=VARCHAR},
+      health_snapshot = #{healthSnapshot,jdbcType=LONGVARCHAR},
+      tongue_image_urls = #{tongueImageUrls,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+</mapper>

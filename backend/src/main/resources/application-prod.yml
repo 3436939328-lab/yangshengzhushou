@@ -1,0 +1,11 @@
+logging:
+  level:
+    root: info
+    org.example.springbootdemo: info
+    org.springframework: warn
+    org.mybatis: warn
+    com.zaxxer.hikari: info
+
+app:
+  logging:
+    path: ${LOG_PATH:logs}

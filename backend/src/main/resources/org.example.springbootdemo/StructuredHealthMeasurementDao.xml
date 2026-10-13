@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.example.springbootdemo.dao.StructuredHealthMeasurementDao">
+  <resultMap id="BaseResultMap" type="org.example.springbootdemo.bean.StructuredHealthMeasurement">
+    <id column="id" property="id" jdbcType="BIGINT" />
+    <result column="user_id" property="userId" jdbcType="BIGINT" />
+    <result column="metric_code" property="metricCode" jdbcType="VARCHAR" />
+    <result column="measured_at" property="measuredAt" jdbcType="VARCHAR" />
+    <result column="timezone" property="timezone" jdbcType="VARCHAR" />
+    <result column="source" property="source" jdbcType="VARCHAR" />
+    <result column="source_name" property="sourceName" jdbcType="VARCHAR" />
+    <result column="provider_record_id" property="providerRecordId" jdbcType="VARCHAR" />
+    <result column="version" property="version" jdbcType="INTEGER" />
+    <result column="quality_status" property="qualityStatus" jdbcType="VARCHAR" />
+    <result column="assessment" property="assessment" jdbcType="VARCHAR" />
+    <result column="assessment_reason" property="assessmentReason" jdbcType="VARCHAR" />
+    <result column="note" property="note" jdbcType="VARCHAR" />
+    <result column="type_specific_json" property="typeSpecificJson" jdbcType="VARCHAR" />
+    <result column="sync_status" property="syncStatus" jdbcType="VARCHAR" />
+    <result column="is_deleted" property="isDeleted" jdbcType="BIT" />
+    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+    <result column="update_time" property="updateTime" jdbcType="TIMESTAMP" />
+  </resultMap>
+
+  <sql id="Base_Column_List">
+    id, user_id, metric_code, measured_at, timezone, source, source_name,
+    provider_record_id, version, quality_status, assessment, assessment_reason,
+    note, type_specific_json, sync_status, is_deleted, create_time, update_time
+  </sql>
+
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List" />
+    from structured_health_measurement
+    where id = #{id,jdbcType=BIGINT}
+      and is_deleted = 0
+  </select>
+
+  <select id="selectByUserId" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List" />
+    from structured_health_measurement
+    where user_id = #{userId,jdbcType=BIGINT}
+      and is_deleted = 0
+    order by measured_at desc, id desc
+  </select>
+
+  <select id="selectByUserIdAndMetric" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List" />
+    from structured_health_measurement
+    where user_id = #{userId,jdbcType=BIGINT}
+      and metric_code = #{metricCode,jdbcType=VARCHAR}
+      and is_deleted = 0
+    order by measured_at desc, id desc
+  </select>
+
+  <select id="selectByUserIdWithLimit" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List" />
+    from structured_health_measurement
+    where user_id = #{userId,jdbcType=BIGINT}
+      and metric_code = #{metricCode,jdbcType=VARCHAR}
+      and is_deleted = 0
+    order by measured_at desc, id desc
+    limit #{limit,jdbcType=INTEGER}
+  </select>
+
+  <select id="selectLatestByUserIdAndMetric" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List" />
+    from structured_health_measurement
+    where user_id = #{userId,jdbcType=BIGINT}
+      and metric_code = #{metricCode,jdbcType=VARCHAR}
+      and is_deleted = 0
+    order by measured_at desc, id desc
+    limit 1
+  </select>
+
+  <insert id="insertSelective" parameterType="org.example.springbootdemo.bean.StructuredHealthMeasurement"
+          useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    insert into structured_health_measurement
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="userId != null">user_id,</if>
+      <if test="metricCode != null">metric_code,</if>
+      <if test="measuredAt != null">measured_at,</if>
+      <if test="timezone != null">timezone,</if>
+      <if test="source != null">source,</if>
+      <if test="sourceName != null">source_name,</if>
+      <if test="providerRecordId != null">provider_record_id,</if>
+      <if test="version != null">version,</if>
+      <if test="qualityStatus != null">quality_status,</if>
+      <if test="assessment != null">assessment,</if>
+      <if test="assessmentReason != null">assessment_reason,</if>
+      <if test="note != null">note,</if>
+      <if test="typeSpecificJson != null">type_specific_json,</if>
+      <if test="syncStatus != null">sync_status,</if>
+      <if test="isDeleted != null">is_deleted,</if>
+      <if test="createTime != null">create_time,</if>
+      <if test="updateTime != null">update_time,</if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="userId != null">#{userId,jdbcType=BIGINT},</if>
+      <if test="metricCode != null">#{metricCode,jdbcType=VARCHAR},</if>
+      <if test="measuredAt != null">#{measuredAt,jdbcType=VARCHAR},</if>
+      <if test="timezone != null">#{timezone,jdbcType=VARCHAR},</if>
+      <if test="source != null">#{source,jdbcType=VARCHAR},</if>
+      <if test="sourceName != null">#{sourceName,jdbcType=VARCHAR},</if>
+      <if test="providerRecordId != null">#{providerRecordId,jdbcType=VARCHAR},</if>
+      <if test="version != null">#{version,jdbcType=INTEGER},</if>
+      <if test="qualityStatus != null">#{qualityStatus,jdbcType=VARCHAR},</if>
+      <if test="assessment != null">#{assessment,jdbcType=VARCHAR},</if>
+      <if test="assessmentReason != null">#{assessmentReason,jdbcType=VARCHAR},</if>
+      <if test="note != null">#{note,jdbcType=VARCHAR},</if>
+      <if test="typeSpecificJson != null">#{typeSpecificJson,jdbcType=VARCHAR},</if>
+      <if test="syncStatus != null">#{syncStatus,jdbcType=VARCHAR},</if>
+      <if test="isDeleted != null">#{isDeleted,jdbcType=BIT},</if>
+      <if test="createTime != null">#{createTime,jdbcType=TIMESTAMP},</if>
+      <if test="updateTime != null">#{updateTime,jdbcType=TIMESTAMP},</if>
+    </trim>
+  </insert>
+
+  <update id="updateByPrimaryKeySelective" parameterType="org.example.springbootdemo.bean.StructuredHealthMeasurement">
+    update structured_health_measurement
+    <set>
+      <if test="metricCode != null">metric_code = #{metricCode,jdbcType=VARCHAR},</if>
+      <if test="measuredAt != null">measured_at = #{measuredAt,jdbcType=VARCHAR},</if>
+      <if test="timezone != null">timezone = #{timezone,jdbcType=VARCHAR},</if>
+      <if test="source != null">source = #{source,jdbcType=VARCHAR},</if>
+      <if test="sourceName != null">source_name = #{sourceName,jdbcType=VARCHAR},</if>
+      <if test="providerRecordId != null">provider_record_id = #{providerRecordId,jdbcType=VARCHAR},</if>
+      <if test="version != null">version = #{version,jdbcType=INTEGER},</if>
+      <if test="qualityStatus != null">quality_status = #{qualityStatus,jdbcType=VARCHAR},</if>
+      <if test="assessment != null">assessment = #{assessment,jdbcType=VARCHAR},</if>
+      <if test="assessmentReason != null">assessment_reason = #{assessmentReason,jdbcType=VARCHAR},</if>
+      <if test="note != null">note = #{note,jdbcType=VARCHAR},</if>
+      <if test="typeSpecificJson != null">type_specific_json = #{typeSpecificJson,jdbcType=VARCHAR},</if>
+      <if test="syncStatus != null">sync_status = #{syncStatus,jdbcType=VARCHAR},</if>
+      <if test="isDeleted != null">is_deleted = #{isDeleted,jdbcType=BIT},</if>
+      update_time = CURRENT_TIMESTAMP,
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+
+  <delete id="deleteByPrimaryKey">
+    delete from structured_health_measurement where id = #{id,jdbcType=BIGINT}
+  </delete>
+
+  <update id="logicalDeleteByPrimaryKey">
+    update structured_health_measurement
+    set is_deleted = 1, update_time = CURRENT_TIMESTAMP
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+</mapper>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.example.springbootdemo.dao.AdminAuditLogDao">
+  <resultMap id="BaseResultMap" type="org.example.springbootdemo.bean.AdminAuditLog">
+    <id column="id" property="id" jdbcType="BIGINT"/>
+    <result column="actor_id" property="actorId" jdbcType="BIGINT"/>
+    <result column="action" property="action" jdbcType="VARCHAR"/>
+    <result column="target_type" property="targetType" jdbcType="VARCHAR"/>
+    <result column="target_id" property="targetId" jdbcType="BIGINT"/>
+    <result column="summary" property="summary" jdbcType="VARCHAR"/>
+    <result column="reason" property="reason" jdbcType="VARCHAR"/>
+    <result column="result" property="result" jdbcType="VARCHAR"/>
+    <result column="request_id" property="requestId" jdbcType="VARCHAR"/>
+    <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
+  </resultMap>
+  <insert id="insertSelective" parameterType="org.example.springbootdemo.bean.AdminAuditLog" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    insert into admin_audit_log
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="actorId != null">actor_id,</if>
+      <if test="action != null">action,</if>
+      <if test="targetType != null">target_type,</if>
+      <if test="targetId != null">target_id,</if>
+      <if test="summary != null">summary,</if>
+      <if test="reason != null">reason,</if>
+      <if test="result != null">result,</if>
+      <if test="requestId != null">request_id,</if>
+      <if test="createdAt != null">created_at,</if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="actorId != null">#{actorId,jdbcType=BIGINT},</if>
+      <if test="action != null">#{action,jdbcType=VARCHAR},</if>
+      <if test="targetType != null">#{targetType,jdbcType=VARCHAR},</if>
+      <if test="targetId != null">#{targetId,jdbcType=BIGINT},</if>
+      <if test="summary != null">#{summary,jdbcType=VARCHAR},</if>
+      <if test="reason != null">#{reason,jdbcType=VARCHAR},</if>
+      <if test="result != null">#{result,jdbcType=VARCHAR},</if>
+      <if test="requestId != null">#{requestId,jdbcType=VARCHAR},</if>
+      <if test="createdAt != null">#{createdAt,jdbcType=TIMESTAMP},</if>
+    </trim>
+  </insert>
+  <select id="selectListByFilter" resultMap="BaseResultMap">
+    select id, actor_id, action, target_type, target_id, summary, reason, result, request_id, created_at
+    from admin_audit_log
+    <where>
+      <if test="targetType != null and targetType != ''">and target_type = #{targetType,jdbcType=VARCHAR}</if>
+      <if test="actorId != null">and actor_id = #{actorId,jdbcType=BIGINT}</if>
+    </where>
+    order by id desc
+    limit #{offset}, #{size}
+  </select>
+  <select id="countListByFilter" resultType="long">
+    select count(*) from admin_audit_log
+    <where>
+      <if test="targetType != null and targetType != ''">and target_type = #{targetType,jdbcType=VARCHAR}</if>
+      <if test="actorId != null">and actor_id = #{actorId,jdbcType=BIGINT}</if>
+    </where>
+  </select>
+</mapper>

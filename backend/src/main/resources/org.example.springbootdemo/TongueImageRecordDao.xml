@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.example.springbootdemo.dao.TongueImageRecordDao">
+  <resultMap id="BaseResultMap" type="org.example.springbootdemo.bean.TongueImageRecord">
+    <id column="id" property="id" jdbcType="BIGINT" />
+    <result column="user_id" property="userId" jdbcType="BIGINT" />
+    <result column="image_asset_id" property="imageAssetId" jdbcType="VARCHAR" />
+    <result column="image_url" property="imageUrl" jdbcType="VARCHAR" />
+    <result column="thumbnail_url" property="thumbnailUrl" jdbcType="VARCHAR" />
+    <result column="captured_at" property="capturedAt" jdbcType="VARCHAR" />
+    <result column="uploaded_at" property="uploadedAt" jdbcType="VARCHAR" />
+    <result column="source" property="source" jdbcType="VARCHAR" />
+    <result column="quality_status" property="qualityStatus" jdbcType="VARCHAR" />
+    <result column="quality_note" property="qualityNote" jdbcType="VARCHAR" />
+    <result column="analysis_status" property="analysisStatus" jdbcType="VARCHAR" />
+    <result column="analysis_id" property="analysisId" jdbcType="VARCHAR" />
+    <result column="analysis_result_json" property="analysisResultJson" jdbcType="VARCHAR" />
+    <result column="model_version" property="modelVersion" jdbcType="VARCHAR" />
+    <result column="note" property="note" jdbcType="VARCHAR" />
+    <result column="is_deleted" property="isDeleted" jdbcType="BIT" />
+    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+    <result column="update_time" property="updateTime" jdbcType="TIMESTAMP" />
+  </resultMap>
+
+  <sql id="Base_Column_List">
+    id, user_id, image_asset_id, image_url, thumbnail_url, captured_at, uploaded_at,
+    source, quality_status, quality_note, analysis_status, analysis_id,
+    analysis_result_json, model_version, note, is_deleted, create_time, update_time
+  </sql>
+
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List" />
+    from tongue_image_record
+    where id = #{id,jdbcType=BIGINT} and is_deleted = 0
+  </select>
+
+  <select id="selectByUserId" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List" />
+    from tongue_image_record
+    where user_id = #{userId,jdbcType=BIGINT} and is_deleted = 0
+    order by captured_at desc, id desc
+  </select>
+
+  <select id="selectByUserIdWithLimit" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List" />
+    from tongue_image_record
+    where user_id = #{userId,jdbcType=BIGINT} and is_deleted = 0
+    order by captured_at desc, id desc
+    limit #{limit,jdbcType=INTEGER}
+  </select>
+
+  <insert id="insertSelective" parameterType="org.example.springbootdemo.bean.TongueImageRecord"
+          useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    insert into tongue_image_record
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="userId != null">user_id,</if>
+      <if test="imageAssetId != null">image_asset_id,</if>
+      <if test="imageUrl != null">image_url,</if>
+      <if test="thumbnailUrl != null">thumbnail_url,</if>
+      <if test="capturedAt != null">captured_at,</if>
+      <if test="uploadedAt != null">uploaded_at,</if>
+      <if test="source != null">source,</if>
+      <if test="qualityStatus != null">quality_status,</if>
+      <if test="qualityNote != null">quality_note,</if>
+      <if test="analysisStatus != null">analysis_status,</if>
+      <if test="analysisId != null">analysis_id,</if>
+      <if test="analysisResultJson != null">analysis_result_json,</if>
+      <if test="modelVersion != null">model_version,</if>
+      <if test="note != null">note,</if>
+      <if test="isDeleted != null">is_deleted,</if>
+      <if test="createTime != null">create_time,</if>
+      <if test="updateTime != null">update_time,</if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="userId != null">#{userId,jdbcType=BIGINT},</if>
+      <if test="imageAssetId != null">#{imageAssetId,jdbcType=VARCHAR},</if>
+      <if test="imageUrl != null">#{imageUrl,jdbcType=VARCHAR},</if>
+      <if test="thumbnailUrl != null">#{thumbnailUrl,jdbcType=VARCHAR},</if>
+      <if test="capturedAt != null">#{capturedAt,jdbcType=VARCHAR},</if>
+      <if test="uploadedAt != null">#{uploadedAt,jdbcType=VARCHAR},</if>
+      <if test="source != null">#{source,jdbcType=VARCHAR},</if>
+      <if test="qualityStatus != null">#{qualityStatus,jdbcType=VARCHAR},</if>
+      <if test="qualityNote != null">#{qualityNote,jdbcType=VARCHAR},</if>
+      <if test="analysisStatus != null">#{analysisStatus,jdbcType=VARCHAR},</if>
+      <if test="analysisId != null">#{analysisId,jdbcType=VARCHAR},</if>
+      <if test="analysisResultJson != null">#{analysisResultJson,jdbcType=VARCHAR},</if>
+      <if test="modelVersion != null">#{modelVersion,jdbcType=VARCHAR},</if>
+      <if test="note != null">#{note,jdbcType=VARCHAR},</if>
+      <if test="isDeleted != null">#{isDeleted,jdbcType=BIT},</if>
+      <if test="createTime != null">#{createTime,jdbcType=TIMESTAMP},</if>
+      <if test="updateTime != null">#{updateTime,jdbcType=TIMESTAMP},</if>
+    </trim>
+  </insert>
+
+  <update id="updateByPrimaryKeySelective" parameterType="org.example.springbootdemo.bean.TongueImageRecord">
+    update tongue_image_record
+    <set>
+      <if test="imageAssetId != null">image_asset_id = #{imageAssetId,jdbcType=VARCHAR},</if>
+      <if test="imageUrl != null">image_url = #{imageUrl,jdbcType=VARCHAR},</if>
+      <if test="thumbnailUrl != null">thumbnail_url = #{thumbnailUrl,jdbcType=VARCHAR},</if>
+      <if test="capturedAt != null">captured_at = #{capturedAt,jdbcType=VARCHAR},</if>
+      <if test="uploadedAt != null">uploaded_at = #{uploadedAt,jdbcType=VARCHAR},</if>
+      <if test="source != null">source = #{source,jdbcType=VARCHAR},</if>
+      <if test="qualityStatus != null">quality_status = #{qualityStatus,jdbcType=VARCHAR},</if>
+      <if test="qualityNote != null">quality_note = #{qualityNote,jdbcType=VARCHAR},</if>
+      <if test="analysisStatus != null">analysis_status = #{analysisStatus,jdbcType=VARCHAR},</if>
+      <if test="analysisId != null">analysis_id = #{analysisId,jdbcType=VARCHAR},</if>
+      <if test="analysisResultJson != null">analysis_result_json = #{analysisResultJson,jdbcType=VARCHAR},</if>
+      <if test="modelVersion != null">model_version = #{modelVersion,jdbcType=VARCHAR},</if>
+      <if test="note != null">note = #{note,jdbcType=VARCHAR},</if>
+      <if test="isDeleted != null">is_deleted = #{isDeleted,jdbcType=BIT},</if>
+      update_time = CURRENT_TIMESTAMP,
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+
+  <update id="logicalDeleteByPrimaryKey">
+    update tongue_image_record set is_deleted = 1, update_time = CURRENT_TIMESTAMP
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+</mapper>

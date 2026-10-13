@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.example.springbootdemo.dao.DoctorProfileDao">
+  <resultMap id="BaseResultMap" type="org.example.springbootdemo.bean.DoctorProfile">
+    <id column="id" property="id" jdbcType="BIGINT" />
+    <result column="user_id" property="userId" jdbcType="BIGINT" />
+    <result column="doctor_name" property="doctorName" jdbcType="VARCHAR" />
+    <result column="title" property="title" jdbcType="VARCHAR" />
+    <result column="specialty" property="specialty" jdbcType="VARCHAR" />
+    <result column="introduction" property="introduction" jdbcType="VARCHAR" />
+    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+    <result column="avatar" property="avatar" jdbcType="VARCHAR" />
+    <result column="department" property="department" jdbcType="VARCHAR" />
+    <result column="license_number" property="licenseNumber" jdbcType="VARCHAR" />
+    <result column="license_image_urls" property="licenseImageUrls" jdbcType="VARCHAR" />
+    <result column="verification_status" property="verificationStatus" jdbcType="VARCHAR" />
+    <result column="verification_remark" property="verificationRemark" jdbcType="VARCHAR" />
+    <result column="accepting" property="accepting" jdbcType="BOOLEAN" />
+  </resultMap>
+
+  <sql id="Base_Column_List">
+    id, user_id, doctor_name, title, specialty, introduction, create_time,
+    avatar, department, license_number, license_image_urls, verification_status, verification_remark, accepting
+  </sql>
+
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long">
+    select <include refid="Base_Column_List" />
+    from doctor_profile
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+
+  <select id="selectByUserId" resultMap="BaseResultMap" parameterType="java.lang.Long">
+    select <include refid="Base_Column_List" />
+    from doctor_profile
+    where user_id = #{userId,jdbcType=BIGINT}
+    limit 1
+  </select>
+
+  <select id="selectList" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List" />
+    from doctor_profile
+    order by id desc
+  </select>
+
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    delete from doctor_profile
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+
+  <insert id="insert" parameterType="org.example.springbootdemo.bean.DoctorProfile">
+    insert into doctor_profile (id, user_id, doctor_name, title, specialty, introduction, create_time,
+      avatar, department, license_number, license_image_urls, verification_status, verification_remark, accepting)
+    values (
+      #{id,jdbcType=BIGINT}, #{userId,jdbcType=BIGINT}, #{doctorName,jdbcType=VARCHAR},
+      #{title,jdbcType=VARCHAR}, #{specialty,jdbcType=VARCHAR}, #{introduction,jdbcType=VARCHAR},
+      #{createTime,jdbcType=TIMESTAMP},
+      #{avatar,jdbcType=VARCHAR}, #{department,jdbcType=VARCHAR}, #{licenseNumber,jdbcType=VARCHAR},
+      #{licenseImageUrls,jdbcType=VARCHAR}, #{verificationStatus,jdbcType=VARCHAR},
+      #{verificationRemark,jdbcType=VARCHAR}, #{accepting,jdbcType=BOOLEAN}
+    )
+  </insert>
+
+  <insert id="insertSelective" parameterType="org.example.springbootdemo.bean.DoctorProfile" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    insert into doctor_profile
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">id,</if>
+      <if test="userId != null">user_id,</if>
+      <if test="doctorName != null">doctor_name,</if>
+      <if test="title != null">title,</if>
+      <if test="specialty != null">specialty,</if>
+      <if test="introduction != null">introduction,</if>
+      <if test="createTime != null">create_time,</if>
+      <if test="avatar != null">avatar,</if>
+      <if test="department != null">department,</if>
+      <if test="licenseNumber != null">license_number,</if>
+      <if test="licenseImageUrls != null">license_image_urls,</if>
+      <if test="verificationStatus != null">verification_status,</if>
+      <if test="verificationRemark != null">verification_remark,</if>
+      <if test="accepting != null">accepting,</if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">#{id,jdbcType=BIGINT},</if>
+      <if test="userId != null">#{userId,jdbcType=BIGINT},</if>
+      <if test="doctorName != null">#{doctorName,jdbcType=VARCHAR},</if>
+      <if test="title != null">#{title,jdbcType=VARCHAR},</if>
+      <if test="specialty != null">#{specialty,jdbcType=VARCHAR},</if>
+      <if test="introduction != null">#{introduction,jdbcType=VARCHAR},</if>
+      <if test="createTime != null">#{createTime,jdbcType=TIMESTAMP},</if>
+      <if test="avatar != null">#{avatar,jdbcType=VARCHAR},</if>
+      <if test="department != null">#{department,jdbcType=VARCHAR},</if>
+      <if test="licenseNumber != null">#{licenseNumber,jdbcType=VARCHAR},</if>
+      <if test="licenseImageUrls != null">#{licenseImageUrls,jdbcType=VARCHAR},</if>
+      <if test="verificationStatus != null">#{verificationStatus,jdbcType=VARCHAR},</if>
+      <if test="verificationRemark != null">#{verificationRemark,jdbcType=VARCHAR},</if>
+      <if test="accepting != null">#{accepting,jdbcType=BOOLEAN},</if>
+    </trim>
+  </insert>
+
+  <update id="updateByPrimaryKeySelective" parameterType="org.example.springbootdemo.bean.DoctorProfile">
+    update doctor_profile
+    <set>
+      <if test="userId != null">user_id = #{userId,jdbcType=BIGINT},</if>
+      <if test="doctorName != null">doctor_name = #{doctorName,jdbcType=VARCHAR},</if>
+      <if test="title != null">title = #{title,jdbcType=VARCHAR},</if>
+      <if test="specialty != null">specialty = #{specialty,jdbcType=VARCHAR},</if>
+      <if test="introduction != null">introduction = #{introduction,jdbcType=VARCHAR},</if>
+      <if test="createTime != null">create_time = #{createTime,jdbcType=TIMESTAMP},</if>
+      <if test="avatar != null">avatar = #{avatar,jdbcType=VARCHAR},</if>
+      <if test="department != null">department = #{department,jdbcType=VARCHAR},</if>
+      <if test="licenseNumber != null">license_number = #{licenseNumber,jdbcType=VARCHAR},</if>
+      <if test="licenseImageUrls != null">license_image_urls = #{licenseImageUrls,jdbcType=VARCHAR},</if>
+      <if test="verificationStatus != null">verification_status = #{verificationStatus,jdbcType=VARCHAR},</if>
+      <if test="verificationRemark != null">verification_remark = #{verificationRemark,jdbcType=VARCHAR},</if>
+      <if test="accepting != null">accepting = #{accepting,jdbcType=BOOLEAN},</if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+
+  <update id="updateByPrimaryKey" parameterType="org.example.springbootdemo.bean.DoctorProfile">
+    update doctor_profile
+    set user_id = #{userId,jdbcType=BIGINT},
+      doctor_name = #{doctorName,jdbcType=VARCHAR},
+      title = #{title,jdbcType=VARCHAR},
+      specialty = #{specialty,jdbcType=VARCHAR},
+      introduction = #{introduction,jdbcType=VARCHAR},
+      create_time = #{createTime,jdbcType=TIMESTAMP},
+      avatar = #{avatar,jdbcType=VARCHAR},
+      department = #{department,jdbcType=VARCHAR},
+      license_number = #{licenseNumber,jdbcType=VARCHAR},
+      license_image_urls = #{licenseImageUrls,jdbcType=VARCHAR},
+      verification_status = #{verificationStatus,jdbcType=VARCHAR},
+      verification_remark = #{verificationRemark,jdbcType=VARCHAR},
+      accepting = #{accepting,jdbcType=BOOLEAN}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+</mapper>

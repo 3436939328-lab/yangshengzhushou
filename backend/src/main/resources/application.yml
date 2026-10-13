@@ -1,0 +1,56 @@
+server:
+  port: 8181
+
+spring:
+  application:
+    name: SpringBootDemo
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/yangsheng_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: root
+    password: 123456
+  freemarker:
+    check-template-location: false
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+app:
+  auth:
+    token-secret: ${AUTH_TOKEN_SECRET:dev-change-me-token-secret}
+    token-ttl-seconds: ${AUTH_TOKEN_TTL_SECONDS:604800}
+  weather:
+    base-url: ${WEATHER_BASE_URL:https://api.open-meteo.com/v1/forecast}
+    timeout-ms: ${WEATHER_TIMEOUT_MS:6000}
+  node-ai:
+    base-url: ${NODE_AI_BASE_URL:http://127.0.0.1:8787}
+    timeout-ms: ${NODE_AI_TIMEOUT_MS:6000}
+  rag:
+    embedding-base-url: ${RAG_EMBEDDING_BASE_URL:http://127.0.0.1:11434/v1/embeddings}
+    embedding-api-key: ${RAG_EMBEDDING_API_KEY:}
+    embedding-model: ${RAG_EMBEDDING_MODEL:bge-m3}
+    milvus-collection: ${RAG_MILVUS_COLLECTION:medical_knowledge}
+    top-k: ${RAG_TOP_K:6}
+    timeout: ${RAG_TIMEOUT:30s}
+  health-ai:
+    # DeepSeek / OpenAI-compatible chat API settings.
+    # Set DEEPSEEK_API_KEY in your environment to enable real AI replies.
+    base-url: ${DEEPSEEK_BASE_URL:${HEALTH_AI_BASE_URL:https://api.deepseek.com}}
+    api-key: ${DEEPSEEK_API_KEY:${HEALTH_AI_API_KEY:}}
+    model: ${DEEPSEEK_MODEL:${HEALTH_AI_MODEL:deepseek-chat}}
+    provider: ${HEALTH_AI_PROVIDER:deepseek}
+    timeout: ${HEALTH_AI_TIMEOUT:45s}
+    memory-window: ${DEEPSEEK_MEMORY_WINDOW:${HEALTH_AI_MEMORY_WINDOW:4}}
+    temperature: ${DEEPSEEK_TEMPERATURE:${HEALTH_AI_TEMPERATURE:0.2}}
+
+mybatis:
+  mapper-locations: classpath:org.example.springbootdemo/*.xml
+  type-aliases-package: org.example.springbootdemo
+  configuration:
+    map-underscore-to-camel-case: true
+
+logging:
+  level:
+    org.example.springbootdemo: debug

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.example.springbootdemo.dao.IdempotentRequestDao">
+  <resultMap id="BaseResultMap" type="org.example.springbootdemo.bean.IdempotentRequest">
+    <id column="id" property="id" jdbcType="BIGINT"/>
+    <result column="actor_id" property="actorId" jdbcType="BIGINT"/>
+    <result column="action" property="action" jdbcType="VARCHAR"/>
+    <result column="key" property="key" jdbcType="VARCHAR"/>
+    <result column="request_hash" property="requestHash" jdbcType="VARCHAR"/>
+    <result column="result_ref" property="resultRef" jdbcType="VARCHAR"/>
+    <result column="status" property="status" jdbcType="VARCHAR"/>
+    <result column="expires_at" property="expiresAt" jdbcType="TIMESTAMP"/>
+    <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
+  </resultMap>
+  <insert id="insertIfAbsent" parameterType="org.example.springbootdemo.bean.IdempotentRequest" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    insert ignore into idempotent_request (actor_id, action, key, request_hash, result_ref, status, expires_at, created_at)
+    values (#{actorId,jdbcType=BIGINT}, #{action,jdbcType=VARCHAR}, #{key,jdbcType=VARCHAR}, #{requestHash,jdbcType=VARCHAR}, #{resultRef,jdbcType=VARCHAR}, #{status,jdbcType=VARCHAR}, #{expiresAt,jdbcType=TIMESTAMP}, #{createdAt,jdbcType=TIMESTAMP})
+  </insert>
+  <select id="selectByActorActionKey" resultMap="BaseResultMap">
+    select id, actor_id, action, key, request_hash, result_ref, status, expires_at, created_at
+    from idempotent_request where actor_id = #{actorId,jdbcType=BIGINT} and action = #{action,jdbcType=VARCHAR} and key = #{key,jdbcType=VARCHAR}
+  </select>
+  <update id="updateResult">
+    update idempotent_request set result_ref = #{resultRef,jdbcType=VARCHAR}, status = #{status,jdbcType=VARCHAR} where id = #{id,jdbcType=BIGINT}
+  </update>
+</mapper>

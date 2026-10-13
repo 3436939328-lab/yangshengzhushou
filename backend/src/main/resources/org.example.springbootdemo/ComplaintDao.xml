@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.example.springbootdemo.dao.ComplaintDao">
+  <resultMap id="BaseResultMap" type="org.example.springbootdemo.bean.Complaint">
+    <id column="id" property="id" jdbcType="BIGINT"/>
+    <result column="event_id" property="eventId" jdbcType="BIGINT"/>
+    <result column="reporter_id" property="reporterId" jdbcType="BIGINT"/>
+    <result column="description" property="description" jdbcType="VARCHAR"/>
+    <result column="status" property="status" jdbcType="VARCHAR"/>
+    <result column="assignee_id" property="assigneeId" jdbcType="BIGINT"/>
+    <result column="merged_into_id" property="mergedIntoId" jdbcType="BIGINT"/>
+    <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
+    <result column="updated_at" property="updatedAt" jdbcType="TIMESTAMP"/>
+    <result column="version" property="version" jdbcType="INTEGER"/>
+  </resultMap>
+  <sql id="Base_Column_List">id, event_id, reporter_id, description, status, assignee_id, merged_into_id, created_at, updated_at, version</sql>
+  <insert id="insertSelective" parameterType="org.example.springbootdemo.bean.Complaint" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    insert into complaint
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="eventId != null">event_id,</if>
+      <if test="reporterId != null">reporter_id,</if>
+      <if test="description != null">description,</if>
+      <if test="status != null">status,</if>
+      <if test="assigneeId != null">assignee_id,</if>
+      <if test="mergedIntoId != null">merged_into_id,</if>
+      <if test="createdAt != null">created_at,</if>
+      <if test="updatedAt != null">updated_at,</if>
+      <if test="version != null">version,</if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="eventId != null">#{eventId,jdbcType=BIGINT},</if>
+      <if test="reporterId != null">#{reporterId,jdbcType=BIGINT},</if>
+      <if test="description != null">#{description,jdbcType=VARCHAR},</if>
+      <if test="status != null">#{status,jdbcType=VARCHAR},</if>
+      <if test="assigneeId != null">#{assigneeId,jdbcType=BIGINT},</if>
+      <if test="mergedIntoId != null">#{mergedIntoId,jdbcType=BIGINT},</if>
+      <if test="createdAt != null">#{createdAt,jdbcType=TIMESTAMP},</if>
+      <if test="updatedAt != null">#{updatedAt,jdbcType=TIMESTAMP},</if>
+      <if test="version != null">#{version,jdbcType=INTEGER},</if>
+    </trim>
+  </insert>
+  <update id="updateStatus" parameterType="org.example.springbootdemo.bean.Complaint">
+    update complaint
+    <set>
+      <if test="status != null">status = #{status,jdbcType=VARCHAR},</if>
+      <if test="assigneeId != null">assignee_id = #{assigneeId,jdbcType=BIGINT},</if>
+      <if test="mergedIntoId != null">merged_into_id = #{mergedIntoId,jdbcType=BIGINT},</if>
+      <if test="updatedAt != null">updated_at = #{updatedAt,jdbcType=TIMESTAMP},</if>
+    </set>
+    where id = #{id,jdbcType=BIGINT} and version = #{version,jdbcType=INTEGER}
+  </update>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List"/> from complaint where id = #{id,jdbcType=BIGINT}
+  </select>
+  <select id="selectByReporterId" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List"/> from complaint where reporter_id = #{reporterId,jdbcType=BIGINT} order by id desc
+  </select>
+  <select id="selectByEventId" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List"/> from complaint where event_id = #{eventId,jdbcType=BIGINT} order by id desc
+  </select>
+  <select id="selectListForAdmin" resultMap="BaseResultMap">
+    select c.id, c.event_id, c.reporter_id, c.description, c.status, c.assignee_id, c.merged_into_id, c.created_at, c.updated_at, c.version
+    from complaint c
+    <if test="doctorId != null">left join complaint_event e on e.id = c.event_id</if>
+    <where>
+      <if test="status != null and status != '' and status != 'ALL'">and c.status = #{status,jdbcType=VARCHAR}</if>
+      <if test="doctorId != null">and e.doctor_id = #{doctorId,jdbcType=BIGINT}</if>
+    </where>
+    order by c.id desc
+    limit #{offset}, #{size}
+  </select>
+  <select id="countListForAdmin" resultType="long">
+    select count(*) from complaint c
+    <if test="doctorId != null">left join complaint_event e on e.id = c.event_id</if>
+    <where>
+      <if test="status != null and status != '' and status != 'ALL'">and c.status = #{status,jdbcType=VARCHAR}</if>
+      <if test="doctorId != null">and e.doctor_id = #{doctorId,jdbcType=BIGINT}</if>
+    </where>
+  </select>
+  <select id="selectByDoctorId" resultMap="BaseResultMap">
+    select c.id, c.event_id, c.reporter_id, c.description, c.status, c.assignee_id, c.merged_into_id, c.created_at, c.updated_at, c.version
+    from complaint c
+    inner join complaint_event e on e.id = c.event_id
+    where e.doctor_id = #{doctorId,jdbcType=BIGINT}
+    order by c.id desc
+  </select>
+</mapper>

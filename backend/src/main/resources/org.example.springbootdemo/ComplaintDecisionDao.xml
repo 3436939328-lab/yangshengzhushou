@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.example.springbootdemo.dao.ComplaintDecisionDao">
+  <resultMap id="BaseResultMap" type="org.example.springbootdemo.bean.ComplaintDecision">
+    <id column="id" property="id" jdbcType="BIGINT"/>
+    <result column="event_id" property="eventId" jdbcType="BIGINT"/>
+    <result column="reviewer_id" property="reviewerId" jdbcType="BIGINT"/>
+    <result column="result" property="result" jdbcType="VARCHAR"/>
+    <result column="severity" property="severity" jdbcType="VARCHAR"/>
+    <result column="reason" property="reason" jdbcType="VARCHAR"/>
+    <result column="evidence_snapshot" property="evidenceSnapshot" jdbcType="LONGVARCHAR"/>
+    <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
+  </resultMap>
+  <sql id="Base_Column_List">id, event_id, reviewer_id, result, severity, reason, evidence_snapshot, created_at</sql>
+  <insert id="insertSelective" parameterType="org.example.springbootdemo.bean.ComplaintDecision" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    insert into complaint_decision
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="eventId != null">event_id,</if>
+      <if test="reviewerId != null">reviewer_id,</if>
+      <if test="result != null">result,</if>
+      <if test="severity != null">severity,</if>
+      <if test="reason != null">reason,</if>
+      <if test="evidenceSnapshot != null">evidence_snapshot,</if>
+      <if test="createdAt != null">created_at,</if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="eventId != null">#{eventId,jdbcType=BIGINT},</if>
+      <if test="reviewerId != null">#{reviewerId,jdbcType=BIGINT},</if>
+      <if test="result != null">#{result,jdbcType=VARCHAR},</if>
+      <if test="severity != null">#{severity,jdbcType=VARCHAR},</if>
+      <if test="reason != null">#{reason,jdbcType=VARCHAR},</if>
+      <if test="evidenceSnapshot != null">#{evidenceSnapshot,jdbcType=LONGVARCHAR},</if>
+      <if test="createdAt != null">#{createdAt,jdbcType=TIMESTAMP},</if>
+    </trim>
+  </insert>
+  <select id="selectByEventId" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List"/> from complaint_decision where event_id = #{eventId,jdbcType=BIGINT} order by id desc
+  </select>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List"/> from complaint_decision where id = #{id,jdbcType=BIGINT}
+  </select>
+</mapper>

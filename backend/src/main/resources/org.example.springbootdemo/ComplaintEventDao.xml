@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.example.springbootdemo.dao.ComplaintEventDao">
+  <resultMap id="BaseResultMap" type="org.example.springbootdemo.bean.ComplaintEvent">
+    <id column="id" property="id" jdbcType="BIGINT"/>
+    <result column="doctor_id" property="doctorId" jdbcType="BIGINT"/>
+    <result column="consultation_id" property="consultationId" jdbcType="BIGINT"/>
+    <result column="category" property="category" jdbcType="VARCHAR"/>
+    <result column="effective_decision" property="effectiveDecision" jdbcType="VARCHAR"/>
+    <result column="decision_at" property="decisionAt" jdbcType="TIMESTAMP"/>
+    <result column="policy_version" property="policyVersion" jdbcType="INTEGER"/>
+    <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
+  </resultMap>
+  <sql id="Base_Column_List">id, doctor_id, consultation_id, category, effective_decision, decision_at, policy_version, created_at</sql>
+  <insert id="insertSelective" parameterType="org.example.springbootdemo.bean.ComplaintEvent" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    insert into complaint_event
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="doctorId != null">doctor_id,</if>
+      <if test="consultationId != null">consultation_id,</if>
+      <if test="category != null">category,</if>
+      <if test="effectiveDecision != null">effective_decision,</if>
+      <if test="decisionAt != null">decision_at,</if>
+      <if test="policyVersion != null">policy_version,</if>
+      <if test="createdAt != null">created_at,</if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="doctorId != null">#{doctorId,jdbcType=BIGINT},</if>
+      <if test="consultationId != null">#{consultationId,jdbcType=BIGINT},</if>
+      <if test="category != null">#{category,jdbcType=VARCHAR},</if>
+      <if test="effectiveDecision != null">#{effectiveDecision,jdbcType=VARCHAR},</if>
+      <if test="decisionAt != null">#{decisionAt,jdbcType=TIMESTAMP},</if>
+      <if test="policyVersion != null">#{policyVersion,jdbcType=INTEGER},</if>
+      <if test="createdAt != null">#{createdAt,jdbcType=TIMESTAMP},</if>
+    </trim>
+  </insert>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List"/> from complaint_event where id = #{id,jdbcType=BIGINT}
+  </select>
+  <select id="selectByConsultationIdAndDoctor" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List"/> from complaint_event
+    where consultation_id = #{consultationId,jdbcType=BIGINT} and doctor_id = #{doctorId,jdbcType=BIGINT}
+    order by id desc limit 1
+  </select>
+  <update id="updateEffectiveDecision" parameterType="org.example.springbootdemo.bean.ComplaintEvent">
+    update complaint_event
+    <set>
+      <if test="effectiveDecision != null">effective_decision = #{effectiveDecision,jdbcType=VARCHAR},</if>
+      <if test="decisionAt != null">decision_at = #{decisionAt,jdbcType=TIMESTAMP},</if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+</mapper>

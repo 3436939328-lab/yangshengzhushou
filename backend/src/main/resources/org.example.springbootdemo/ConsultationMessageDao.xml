@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.example.springbootdemo.dao.ConsultationMessageDao">
+  <resultMap id="BaseResultMap" type="org.example.springbootdemo.bean.ConsultationMessage">
+    <id column="id" property="id" jdbcType="BIGINT" />
+    <result column="consultation_id" property="consultationId" jdbcType="BIGINT" />
+    <result column="sender_id" property="senderId" jdbcType="BIGINT" />
+    <result column="sender_role" property="senderRole" jdbcType="VARCHAR" />
+    <result column="content" property="content" jdbcType="VARCHAR" />
+    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+  </resultMap>
+
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long">
+    select id, consultation_id, sender_id, sender_role, content, create_time
+    from consultation_message
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+
+  <select id="selectByConsultationId" resultMap="BaseResultMap" parameterType="java.lang.Long">
+    select id, consultation_id, sender_id, sender_role, content, create_time
+    from consultation_message
+    where consultation_id = #{consultationId,jdbcType=BIGINT}
+    order by id asc
+  </select>
+
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    delete from consultation_message
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+
+  <insert id="insert" parameterType="org.example.springbootdemo.bean.ConsultationMessage">
+    insert into consultation_message (id, consultation_id, sender_id, sender_role, content, create_time)
+    values (
+      #{id,jdbcType=BIGINT}, #{consultationId,jdbcType=BIGINT}, #{senderId,jdbcType=BIGINT}, #{senderRole,jdbcType=VARCHAR},
+      #{content,jdbcType=VARCHAR}, #{createTime,jdbcType=TIMESTAMP}
+    )
+  </insert>
+
+  <insert id="insertSelective" parameterType="org.example.springbootdemo.bean.ConsultationMessage" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    insert into consultation_message
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">id,</if>
+      <if test="consultationId != null">consultation_id,</if>
+      <if test="senderId != null">sender_id,</if>
+      <if test="senderRole != null">sender_role,</if>
+      <if test="content != null">content,</if>
+      <if test="createTime != null">create_time,</if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">#{id,jdbcType=BIGINT},</if>
+      <if test="consultationId != null">#{consultationId,jdbcType=BIGINT},</if>
+      <if test="senderId != null">#{senderId,jdbcType=BIGINT},</if>
+      <if test="senderRole != null">#{senderRole,jdbcType=VARCHAR},</if>
+      <if test="content != null">#{content,jdbcType=VARCHAR},</if>
+      <if test="createTime != null">#{createTime,jdbcType=TIMESTAMP},</if>
+    </trim>
+  </insert>
+
+  <update id="updateByPrimaryKeySelective" parameterType="org.example.springbootdemo.bean.ConsultationMessage">
+    update consultation_message
+    <set>
+      <if test="consultationId != null">consultation_id = #{consultationId,jdbcType=BIGINT},</if>
+      <if test="senderId != null">sender_id = #{senderId,jdbcType=BIGINT},</if>
+      <if test="senderRole != null">sender_role = #{senderRole,jdbcType=VARCHAR},</if>
+      <if test="content != null">content = #{content,jdbcType=VARCHAR},</if>
+      <if test="createTime != null">create_time = #{createTime,jdbcType=TIMESTAMP},</if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+
+  <update id="updateByPrimaryKey" parameterType="org.example.springbootdemo.bean.ConsultationMessage">
+    update consultation_message
+    set consultation_id = #{consultationId,jdbcType=BIGINT},
+      sender_id = #{senderId,jdbcType=BIGINT},
+      sender_role = #{senderRole,jdbcType=VARCHAR},
+      content = #{content,jdbcType=VARCHAR},
+      create_time = #{createTime,jdbcType=TIMESTAMP}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+</mapper>

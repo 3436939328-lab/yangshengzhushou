@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.example.springbootdemo.dao.ComplaintAppealDao">
+  <resultMap id="BaseResultMap" type="org.example.springbootdemo.bean.ComplaintAppeal">
+    <id column="id" property="id" jdbcType="BIGINT"/>
+    <result column="decision_id" property="decisionId" jdbcType="BIGINT"/>
+    <result column="doctor_id" property="doctorId" jdbcType="BIGINT"/>
+    <result column="status" property="status" jdbcType="VARCHAR"/>
+    <result column="reason" property="reason" jdbcType="VARCHAR"/>
+    <result column="reviewer_id" property="reviewerId" jdbcType="BIGINT"/>
+    <result column="result_reason" property="resultReason" jdbcType="VARCHAR"/>
+    <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
+    <result column="reviewed_at" property="reviewedAt" jdbcType="TIMESTAMP"/>
+    <result column="version" property="version" jdbcType="INTEGER"/>
+  </resultMap>
+  <sql id="Base_Column_List">id, decision_id, doctor_id, status, reason, reviewer_id, result_reason, created_at, reviewed_at, version</sql>
+  <insert id="insertSelective" parameterType="org.example.springbootdemo.bean.ComplaintAppeal" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    insert into complaint_appeal
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="decisionId != null">decision_id,</if>
+      <if test="doctorId != null">doctor_id,</if>
+      <if test="status != null">status,</if>
+      <if test="reason != null">reason,</if>
+      <if test="reviewerId != null">reviewer_id,</if>
+      <if test="resultReason != null">result_reason,</if>
+      <if test="createdAt != null">created_at,</if>
+      <if test="reviewedAt != null">reviewed_at,</if>
+      <if test="version != null">version,</if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="decisionId != null">#{decisionId,jdbcType=BIGINT},</if>
+      <if test="doctorId != null">#{doctorId,jdbcType=BIGINT},</if>
+      <if test="status != null">#{status,jdbcType=VARCHAR},</if>
+      <if test="reason != null">#{reason,jdbcType=VARCHAR},</if>
+      <if test="reviewerId != null">#{reviewerId,jdbcType=BIGINT},</if>
+      <if test="resultReason != null">#{resultReason,jdbcType=VARCHAR},</if>
+      <if test="createdAt != null">#{createdAt,jdbcType=TIMESTAMP},</if>
+      <if test="reviewedAt != null">#{reviewedAt,jdbcType=TIMESTAMP},</if>
+      <if test="version != null">#{version,jdbcType=INTEGER},</if>
+    </trim>
+  </insert>
+  <update id="updateStatus" parameterType="org.example.springbootdemo.bean.ComplaintAppeal">
+    update complaint_appeal
+    <set>
+      <if test="status != null">status = #{status,jdbcType=VARCHAR},</if>
+      <if test="reviewerId != null">reviewer_id = #{reviewerId,jdbcType=BIGINT},</if>
+      <if test="resultReason != null">result_reason = #{resultReason,jdbcType=VARCHAR},</if>
+      <if test="reviewedAt != null">reviewed_at = #{reviewedAt,jdbcType=TIMESTAMP},</if>
+    </set>
+    where id = #{id,jdbcType=BIGINT} and version = #{version,jdbcType=INTEGER}
+  </update>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List"/> from complaint_appeal where id = #{id,jdbcType=BIGINT}
+  </select>
+  <select id="selectListForAdmin" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List"/> from complaint_appeal
+    <where>
+      <if test="status != null and status != '' and status != 'ALL'">and status = #{status,jdbcType=VARCHAR}</if>
+    </where>
+    order by id desc
+    limit #{offset}, #{size}
+  </select>
+  <select id="countListForAdmin" resultType="long">
+    select count(*) from complaint_appeal
+    <where>
+      <if test="status != null and status != '' and status != 'ALL'">and status = #{status,jdbcType=VARCHAR}</if>
+    </where>
+  </select>
+  <select id="selectByDecisionId" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List"/> from complaint_appeal where decision_id = #{decisionId,jdbcType=BIGINT} order by id desc
+  </select>
+</mapper>

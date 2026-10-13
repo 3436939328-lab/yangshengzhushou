@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.example.springbootdemo.dao.NotificationOutboxDao">
+  <resultMap id="BaseResultMap" type="org.example.springbootdemo.bean.NotificationOutbox">
+    <id column="id" property="id" jdbcType="BIGINT"/>
+    <result column="event_key" property="eventKey" jdbcType="VARCHAR"/>
+    <result column="recipient_id" property="recipientId" jdbcType="BIGINT"/>
+    <result column="type" property="type" jdbcType="VARCHAR"/>
+    <result column="title" property="title" jdbcType="VARCHAR"/>
+    <result column="body" property="body" jdbcType="VARCHAR"/>
+    <result column="status" property="status" jdbcType="VARCHAR"/>
+    <result column="retry_count" property="retryCount" jdbcType="INTEGER"/>
+    <result column="next_retry_at" property="nextRetryAt" jdbcType="TIMESTAMP"/>
+    <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
+  </resultMap>
+  <insert id="insertSelective" parameterType="org.example.springbootdemo.bean.NotificationOutbox" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    insert into notification_outbox (event_key, recipient_id, type, title, body, status, retry_count, next_retry_at, created_at)
+    values (#{eventKey,jdbcType=VARCHAR}, #{recipientId,jdbcType=BIGINT}, #{type,jdbcType=VARCHAR}, #{title,jdbcType=VARCHAR}, #{body,jdbcType=VARCHAR}, #{status,jdbcType=VARCHAR}, #{retryCount,jdbcType=INTEGER}, #{nextRetryAt,jdbcType=TIMESTAMP}, #{createdAt,jdbcType=TIMESTAMP})
+  </insert>
+  <select id="selectPendingForRetry" resultMap="BaseResultMap">
+    select id, event_key, recipient_id, type, title, body, status, retry_count, next_retry_at, created_at
+    from notification_outbox
+    where status = 'PENDING' and (next_retry_at is null or next_retry_at &lt;= now())
+    order by id asc
+    limit #{limit,jdbcType=INTEGER}
+  </select>
+  <update id="updateStatus">
+    update notification_outbox set status = #{status,jdbcType=VARCHAR}, retry_count = #{retryCount,jdbcType=INTEGER}, next_retry_at = #{nextRetryAt,jdbcType=TIMESTAMP} where id = #{id,jdbcType=BIGINT}
+  </update>
+</mapper>
