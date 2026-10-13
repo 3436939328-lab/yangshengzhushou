@@ -1,6 +1,6 @@
-# 茹安阁 (YangShengZhuShou)
+# 茹安阁 (RuAnGe)
 
-> 一款基于 HarmonyOS + Spring Boot 的智能养生健康管理应用，融合 AI 对话、舌象分析、健康档案、在线问诊、亲人关怀等功能。
+> 一款基于 HarmonyOS + Spring Boot 的智能健康养生管理应用，融合 AI 对话、舌象分析、健康档案、在线问诊、亲人关怀等功能。
 
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-green)
 ![HarmonyOS](https://img.shields.io/badge/HarmonyOS-5.0-red)
@@ -53,7 +53,7 @@
             │                           │
    ┌────────▼────────┐        ┌─────────▼─────────┐
    │   MySQL 数据库   │        │  Node.js AI 引擎   │
-   │  yangsheng_db   │        │  LLM / RAG / 舌象  │
+   │  ruange_db      │        │  LLM / RAG / 舌象  │
    └─────────────────┘        └───────────────────┘
 ```
 
@@ -62,7 +62,7 @@
 ## 📁 项目结构
 
 ```
-yangshengzhushou/
+ruange/
 ├── entry/                      # HarmonyOS 前端 App
 │   └── src/main/ets/
 │       ├── components/         # 组件
@@ -93,7 +93,7 @@ yangshengzhushou/
 │           └── org.example.springbootdemo/  # MyBatis Mapper XML
 │
 ├── docs/                       # 项目文档
-│   ├── 养生助手三端完整说明文档.md
+│   ├── 茹安阁三端完整说明文档.md
 │   ├── 技术实现.md
 │   └── ...
 │
@@ -227,7 +227,7 @@ cd backend
 
 ## 📚 相关文档
 
-- [养生助手三端完整说明文档](docs/养生助手三端完整说明文档.md) — 产品功能完整说明
+- [茹安阁三端完整说明文档](docs/养生助手三端完整说明文档.md) — 产品功能完整说明
 - [技术实现](docs/技术实现.md) — 技术架构与实现细节
 - [用户端健康与亲人关怀实现文档](docs/用户端健康与亲人关怀实现文档.md) — 健康 & 亲人模块详情
 - [管理员端实现文档](docs/管理员端实现文档.md) — 管理后台功能说明
