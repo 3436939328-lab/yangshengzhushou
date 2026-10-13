@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>茹安阁 — 项目演示</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; background: #1a1a2e; color: #333; }
+
+.slide {
+  width: 960px; height: 540px; margin: 30px auto;
+  border-radius: 12px; overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  position: relative;
+}
+
+/* === SLIDE 1: COVER === */
+.s1 { background: linear-gradient(135deg, #2D3A2D 0%, #3D5238 100%); }
+.s1 .circle1 { position: absolute; top: -80px; right: -60px; width: 280px; height: 280px; border-radius: 50%; background: rgba(91,117,83,0.3); }
+.s1 .circle2 { position: absolute; bottom: -60px; left: -40px; width: 200px; height: 200px; border-radius: 50%; background: rgba(198,156,114,0.15); }
+.s1 .accent { position: absolute; top: 38%; left: 8%; width: 60px; height: 4px; background: #C69C72; }
+.s1 .title { position: absolute; top: 20%; left: 8%; font-size: 64px; font-weight: bold; color: #fff; letter-spacing: 12px; }
+.s1 .subtitle { position: absolute; top: 42%; left: 8%; font-size: 22px; color: #C69C72; letter-spacing: 6px; }
+.s1 .tagline { position: absolute; top: 52%; left: 8%; font-size: 24px; color: #fff; }
+.s1 .desc { position: absolute; top: 62%; left: 8%; font-size: 15px; color: #E8EFE4; }
+.s1 .footer { position: absolute; bottom: 8%; left: 8%; font-size: 13px; color: #C69C72; }
+.s1 .badge { position: absolute; top: 8%; right: 8%; background: rgba(255,255,255,0.1); padding: 8px 20px; border-radius: 20px; font-size: 13px; color: #C69C72; }
+
+/* === SLIDE 2: TOC === */
+.s2 { background: #FDF6EC; }
+.s2 .accent-bar { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: #C69C72; }
+.s2 .left-bar { position: absolute; top: 0; left: 0; width: 6px; height: 100%; background: #5B7553; }
+.s2 .title { position: absolute; top: 40px; left: 50px; font-size: 32px; font-weight: bold; color: #3D5238; font-family: Georgia, serif; }
+.s2 .title-en { position: absolute; top: 40px; left: 120px; font-size: 14px; color: #999; padding-top: 12px; }
+.s2 .underline { position: absolute; top: 82px; left: 50px; width: 80px; height: 3px; background: #C69C72; }
+.s2 .toc-grid { position: absolute; top: 130px; left: 50px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; width: 860px; }
+.s2 .toc-card { background: #fff; border: 1px solid #E8EFE4; border-radius: 10px; padding: 22px 28px; display: flex; align-items: center; gap: 18px; }
+.s2 .toc-num { font-size: 28px; font-weight: bold; color: #C69C72; font-family: Georgia, serif; }
+.s2 .toc-info h3 { font-size: 17px; color: #2D3A2D; margin-bottom: 4px; }
+.s2 .toc-info p { font-size: 12px; color: #6B7B6B; }
+
+/* === COMMON SLIDE STYLES === */
+.slide-common { background: #FDF6EC; }
+.slide-common .accent-bar { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: #C69C72; }
+.slide-common .left-bar { position: absolute; top: 0; left: 0; width: 6px; height: 100%; background: #5B7553; }
+.slide-common .slide-num { position: absolute; top: 40px; right: 50px; font-size: 14px; color: #C69C72; font-family: Georgia, serif; }
+.slide-common .slide-title { position: absolute; top: 40px; left: 50px; font-size: 28px; font-weight: bold; color: #3D5238; font-family: Georgia, serif; }
+.slide-common .slide-title-en { position: absolute; top: 46px; left: 230px; font-size: 13px; color: #999; }
+.slide-common .underline { position: absolute; top: 82px; left: 50px; width: 80px; height: 3px; background: #C69C72; }
+
+/* === SLIDE 3: TEAM INTRO === */
+.s3 .team-box { position: absolute; top: 110px; left: 50px; width: 860px; background: #fff; border: 1px solid #E8EFE4; border-radius: 12px; padding: 30px 36px; }
+.s3 .team-box h3 { font-size: 16px; color: #5B7553; margin-bottom: 16px; font-family: Georgia, serif; }
+.s3 .team-box .info { font-size: 14px; color: #2D3A2D; line-height: 2.2; }
+.s3 .team-box .info span { display: inline-block; width: 110px; color: #6B7B6B; }
+.s3 .why-box { position: absolute; top: 350px; left: 50px; width: 520px; }
+.s3 .why-box h3 { font-size: 16px; color: #5B7553; margin-bottom: 8px; font-family: Georgia, serif; }
+.s3 .why-box p { font-size: 13px; color: #2D3A2D; line-height: 1.8; }
+.s3 .highlight-box { position: absolute; top: 350px; left: 600px; width: 310px; background: #5B7553; border-radius: 12px; padding: 24px 28px; }
+.s3 .highlight-box .label { font-size: 12px; color: #C69C72; margin-bottom: 6px; }
+.s3 .highlight-box .text { font-size: 15px; color: #fff; line-height: 1.6; font-weight: bold; }
+
+/* === SLIDE 4: CORE FEATURES === */
+.s4 .features { position: absolute; top: 110px; left: 50px; width: 860px; }
+.s4 .feature-item { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 12px; background: #fff; border: 1px solid #E8EFE4; border-radius: 8px; padding: 14px 20px; }
+.s4 .feature-icon { width: 36px; height: 36px; border-radius: 50%; background: #E8EFE4; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.s4 .feature-text h4 { font-size: 14px; color: #3D5238; margin-bottom: 3px; }
+.s4 .feature-text p { font-size: 12px; color: #6B7B6B; }
+
+/* === SLIDE 5: INNOVATION === */
+.s5 .left-col { position: absolute; top: 110px; left: 50px; width: 420px; }
+.s5 .right-col { position: absolute; top: 110px; left: 500px; width: 420px; }
+.s5 .col-title { font-size: 18px; color: #3D5238; margin-bottom: 14px; font-family: Georgia, serif; }
+.s5 .innov-card { background: #fff; border: 1px solid #E8EFE4; border-radius: 8px; padding: 14px 18px; margin-bottom: 10px; }
+.s5 .innov-card .num { display: inline-block; width: 24px; height: 24px; border-radius: 50%; background: #C69C72; color: #fff; text-align: center; line-height: 24px; font-size: 12px; font-weight: bold; margin-right: 8px; }
+.s5 .innov-card h4 { display: inline; font-size: 13px; color: #2D3A2D; }
+.s5 .innov-card p { font-size: 11px; color: #6B7B6B; margin-top: 4px; line-height: 1.6; }
+.s5 .right-col .innov-card .num { background: #5B7553; }
+
+/* === SLIDE 6: BUSINESS === */
+.s6 .biz-box { position: absolute; top: 110px; left: 50px; width: 860px; background: #fff; border: 1px solid #E8EFE4; border-radius: 12px; padding: 30px 40px; }
+.s6 .biz-section { margin-bottom: 18px; }
+.s6 .biz-section h3 { font-size: 15px; color: #5B7553; margin-bottom: 8px; }
+.s6 .biz-section p, .s6 .biz-section li { font-size: 13px; color: #2D3A2D; line-height: 1.9; }
+.s6 .biz-section ul { list-style: none; padding-left: 0; }
+.s6 .biz-section li::before { content: "•"; color: #C69C72; font-weight: bold; margin-right: 8px; }
+
+/* === SLIDE 7: DEMO === */
+.s7 .demo-box { position: absolute; top: 110px; left: 50px; width: 860px; background: #fff; border: 1px solid #E8EFE4; border-radius: 12px; padding: 30px 40px; }
+.s7 .demo-box h3 { font-size: 16px; color: #5B7553; margin-bottom: 14px; }
+.s7 .demo-list { list-style: none; }
+.s7 .demo-list li { font-size: 14px; color: #2D3A2D; line-height: 2.2; padding-left: 20px; position: relative; }
+.s7 .demo-list li::before { content: "▶"; color: #C69C72; position: absolute; left: 0; font-size: 10px; top: 8px; }
+.s7 .demo-note { margin-top: 16px; font-size: 12px; color: #999; }
+
+/* === SLIDE 8: THANK YOU === */
+.s8 { background: linear-gradient(135deg, #2D3A2D 0%, #3D5238 100%); }
+.s8 .circle1 { position: absolute; top: -80px; left: -60px; width: 280px; height: 280px; border-radius: 50%; background: rgba(91,117,83,0.2); }
+.s8 .circle2 { position: absolute; bottom: -40px; right: -40px; width: 200px; height: 200px; border-radius: 50%; background: rgba(198,156,114,0.1); }
+.s8 .accent { position: absolute; top: 32%; left: 50%; transform: translateX(-50%); width: 60px; height: 4px; background: #C69C72; }
+.s8 .thanks { position: absolute; top: 36%; left: 0; width: 100%; text-align: center; font-size: 52px; font-weight: bold; color: #fff; letter-spacing: 12px; }
+.s8 .tagline { position: absolute; top: 55%; left: 0; width: 100%; text-align: center; font-size: 16px; color: #E8EFE4; }
+.s8 .contact { position: absolute; bottom: 12%; left: 0; width: 100%; text-align: center; font-size: 13px; color: #C69C72; }
+.s8 .contact2 { position: absolute; bottom: 7%; left: 0; width: 100%; text-align: center; font-size: 11px; color: #E8EFE4; }
+
+/* Nav */
+.nav { text-align: center; padding: 20px; }
+.nav a { color: #C69C72; text-decoration: none; margin: 0 10px; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<!-- SLIDE 1: COVER -->
+<div class="slide s1">
+  <div class="circle1"></div>
+  <div class="circle2"></div>
+  <div class="badge">OH创新大赛赛道三作品提交</div>
+  <div class="accent"></div>
+  <div class="title">茹安阁</div>
+  <div class="subtitle">RuAnGe</div>
+  <div class="tagline">智能中医健康养生平台</div>
+  <div class="desc">AI 舌象分析 · 个性化养生建议 · 在线问诊 · 亲人关怀</div>
+  <div class="footer">茹安阁团队  |  2026年10月</div>
+</div>
+
+<!-- SLIDE 2: TOC -->
+<div class="slide s2">
+  <div class="accent-bar"></div>
+  <div class="left-bar"></div>
+  <div class="title">目录</div>
+  <div class="title-en">CONTENTS</div>
+  <div class="underline"></div>
+  <div class="toc-grid">
+    <div class="toc-card">
+      <div class="toc-num">01</div>
+      <div class="toc-info"><h3>创作简介</h3><p>团队介绍与项目初衷</p></div>
+    </div>
+    <div class="toc-card">
+      <div class="toc-num">02</div>
+      <div class="toc-info"><h3>应用核心功能</h3><p>六大核心功能模块</p></div>
+    </div>
+    <div class="toc-card">
+      <div class="toc-num">03</div>
+      <div class="toc-info"><h3>创新性</h3><p>体验创新与鸿蒙特性</p></div>
+    </div>
+    <div class="toc-card">
+      <div class="toc-num">04</div>
+      <div class="toc-info"><h3>商业价值</h3><p>市场分析与商业模式</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 3: TEAM INTRO -->
+<div class="slide slide-common s3">
+  <div class="accent-bar"></div>
+  <div class="left-bar"></div>
+  <div class="slide-num">3</div>
+  <div class="slide-title">创作简介</div>
+  <div class="slide-title-en">INTRODUCTION</div>
+  <div class="underline"></div>
+  <div class="team-box">
+    <h3>📋 团队简介</h3>
+    <div class="info">
+      <span>团队名称：</span>茹安阁团队<br>
+      <span>队　　长：</span>XXX<br>
+      <span>团队成员：</span>XXX / XXX / XXX / XXX<br>
+      <span>学校&专业：</span>XXX大学 — 计算机科学与技术<br>
+      <span>指导老师：</span>XXX<br>
+      <span>联络方式：</span>138-XXXX-XXXX / 微信号：XXXXXX
+    </div>
+  </div>
+  <div class="why-box">
+    <h3>💡 为什么做这款APP</h3>
+    <p>随着慢性病患者超3亿、人口老龄化加速，健康管理需求日益增长。传统养生知识难辨真伪，家人健康难以远程关注。我们希望借助鸿蒙生态与AI技术，让中医养生智慧走进千家万户。</p>
+  </div>
+  <div class="highlight-box">
+    <div class="label">✨ 应用亮点</div>
+    <div class="text">AI舌象分析 + 亲人健康守护，你的随身中医养生顾问</div>
+  </div>
+</div>
+
+<!-- SLIDE 4: CORE FEATURES -->
+<div class="slide slide-common s4">
+  <div class="accent-bar"></div>
+  <div class="left-bar"></div>
+  <div class="slide-num">4</div>
+  <div class="slide-title">应用核心功能</div>
+  <div class="slide-title-en">CORE FEATURES</div>
+  <div class="underline"></div>
+  <div class="features">
+    <div class="feature-item">
+      <div class="feature-icon">👅</div>
+      <div class="feature-text"><h4>AI舌象智能分析</h4><p>拍照上传，AI自动识别舌质舌苔，基于中医理论给出调理建议，历史对比追踪变化</p></div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">📊</div>
+      <div class="feature-text"><h4>结构化健康档案</h4><p>10+种健康指标统一管理（血压/血糖/心率/睡眠等），自动评估正常/关注/紧急三级</p></div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🤖</div>
+      <div class="feature-text"><h4>个性化养生建议</h4><p>RAG知识库+大模型，结合天气/季节/体质生成每日养生方案（饮食·运动·作息）</p></div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">👨‍👩‍👧</div>
+      <div class="feature-text"><h4>亲人关怀守护</h4><p>邀请家人共享健康数据，子女远程关注父母状况，按指标类别细粒度授权</p></div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">💬</div>
+      <div class="feature-text"><h4>在线问诊服务</h4><p>图文问诊，健康快照一键发送（健康卡+舌象），医生评价体系保障服务质量</p></div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">📱</div>
+      <div class="feature-text"><h4>三端协同架构</h4><p>用户端/医生端/管理端一体化，打造完整健康服务生态</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 5: INNOVATION -->
+<div class="slide slide-common s5">
+  <div class="accent-bar"></div>
+  <div class="left-bar"></div>
+  <div class="slide-num">5</div>
+  <div class="slide-title">创新性</div>
+  <div class="slide-title-en">INNOVATION</div>
+  <div class="underline"></div>
+  <div class="left-col">
+    <div class="col-title">🌟 体验的创新与提升</div>
+    <div class="innov-card">
+      <span class="num">1</span><h4>测评养医护闭环</h4>
+      <p>从测量、评估、养生、问诊到亲人守护，一站式健康管理闭环</p>
+    </div>
+    <div class="innov-card">
+      <span class="num">2</span><h4>中医AI融合</h4>
+      <p>舌诊、体质辨识等中医特色与AI结合，传统智慧现代化</p>
+    </div>
+    <div class="innov-card">
+      <span class="num">3</span><h4>家庭化设计</h4>
+      <p>不是孤立的个人工具，而是全家人的健康守护平台</p>
+    </div>
+    <div class="innov-card">
+      <span class="num">4</span><h4>积分激励体系</h4>
+      <p>健康打卡+积分奖励，提升用户粘性与持续使用意愿</p>
+    </div>
+  </div>
+  <div class="right-col">
+    <div class="col-title">🔗 接入的鸿蒙特性</div>
+    <div class="innov-card">
+      <span class="num">1</span><h4>ArkTS/ArkUI原生开发</h4>
+      <p>流畅体验，充分发挥鸿蒙系统性能优势</p>
+    </div>
+    <div class="innov-card">
+      <span class="num">2</span><h4>分布式能力</h4>
+      <p>支持多设备协同，健康数据跨设备流转</p>
+    </div>
+    <div class="innov-card">
+      <span class="num">3</span><h4>原子化服务</h4>
+      <p>健康卡片、AI助手可直达服务，无需安装完整App</p>
+    </div>
+    <div class="innov-card">
+      <span class="num">4</span><h4>统一设计规范</h4>
+      <p>遵循鸿蒙设计语言，界面简洁优雅，操作直觉流畅</p>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 6: BUSINESS VALUE -->
+<div class="slide slide-common s6">
+  <div class="accent-bar"></div>
+  <div class="left-bar"></div>
+  <div class="slide-num">6</div>
+  <div class="slide-title">商业价值</div>
+  <div class="slide-title-en">BUSINESS VALUE</div>
+  <div class="underline"></div>
+  <div class="biz-box">
+    <div class="biz-section">
+      <h3>👥 用户范围</h3>
+      <p>面向全年龄段，核心用户为中老年人群、职场青年、慢病人群和中医爱好者，目标市场规模达数亿人。</p>
+    </div>
+    <div class="biz-section">
+      <h3>💰 商业模式</h3>
+      <ul>
+        <li>基础功能免费 + 会员增值服务（高级AI分析、无限舌诊、专属方案）</li>
+        <li>在线问诊服务费抽成</li>
+        <li>健康商城（养生产品、健康食品、中医器械）</li>
+        <li>B端合作（保险公司、体检中心、中医院）</li>
+      </ul>
+    </div>
+    <div class="biz-section">
+      <h3>📈 商业潜力</h3>
+      <p>健康中国战略加持，中医养生市场持续增长，鸿蒙生态先发优势明显。</p>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 7: DEMO -->
+<div class="slide slide-common s7">
+  <div class="accent-bar"></div>
+  <div class="left-bar"></div>
+  <div class="slide-num">7</div>
+  <div class="slide-title">Demo</div>
+  <div class="slide-title-en">DEMONSTRATION</div>
+  <div class="underline"></div>
+  <div class="demo-box">
+    <h3>🎬 演示视频包含以下核心功能展示</h3>
+    <ul class="demo-list">
+      <li>登录注册 & 首页概览</li>
+      <li>健康档案 — 血压/血糖等指标记录与健康卡</li>
+      <li>AI舌象分析 — 拍照上传与智能分析</li>
+      <li>AI养生助手 — 对话问答与场景化建议</li>
+      <li>亲人关怀 — 邀请家人与健康共享</li>
+      <li>在线问诊 — 图文问诊与健康快照</li>
+    </ul>
+    <p class="demo-note">（视频文件请随仓库一同提交，或在README中提供视频链接）</p>
+  </div>
+</div>
+
+<!-- SLIDE 8: THANK YOU -->
+<div class="slide s8">
+  <div class="circle1"></div>
+  <div class="circle2"></div>
+  <div class="accent"></div>
+  <div class="thanks">感谢聆听</div>
+  <div class="tagline">茹安阁 — 养生有道，健康有方，守护家人每一天</div>
+  <div class="contact">GitHub: 3436939328-lab / yangshengzhushou</div>
+  <div class="contact2">欢迎通过 GitHub Issues 与我们交流</div>
+</div>
+
+<div class="nav">
+  <a href="#">↑ 回到顶部</a>
+</div>
+
+</body>
+</html>
