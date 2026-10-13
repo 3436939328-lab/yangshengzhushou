@@ -18,7 +18,7 @@ export struct GuideView {
   build() {
     Column() {
       Blank()
-      Text('养生助手')
+      Text('茹安阁')
         .fontSize(34)
         .fontWeight(FontWeight.Bold)
         .fontColor(DEEP_TEXT)

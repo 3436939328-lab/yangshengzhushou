@@ -175,7 +175,7 @@ export struct ProfileTab {
 
       // 功能菜单列表
       Column({ space: 0 }) {
-        this.MenuItem('我的问诊', '查看问诊记录和医生回复', '💬', () => {
+        this.MenuItem('健康咨询', '查看咨询记录与养生建议', '💬', () => {
           this.activeSubPage = 'consultation';
           this.loadConsultations();
         })
@@ -232,7 +232,7 @@ export struct ProfileTab {
           .fontColor(BRAND_GREEN)
           .onClick(() => { this.activeSubPage = ''; })
         Blank()
-        Text('我的问诊')
+        Text('健康咨询')
           .fontSize(18)
           .fontWeight(FontWeight.Bold)
           .fontColor(DEEP_TEXT)
@@ -259,7 +259,7 @@ export struct ProfileTab {
         Column({ space: 12 }) {
           Text('💬')
             .fontSize(48)
-          Text('暂无问诊记录')
+          Text('暂无咨询记录')
             .fontSize(16)
             .fontColor(DEEP_TEXT)
           Text('您还没有发起过问诊，可通过问诊页面向医生咨询')
@@ -1062,14 +1062,14 @@ export struct ProfileTab {
       .width('100%')
 
       Column({ space: 10 }) {
-        Text('养生助手')
+        Text('茹安阁')
           .fontSize(20)
           .fontWeight(FontWeight.Bold)
           .fontColor(DEEP_TEXT)
         Text('版本 1.0.0')
           .fontSize(13)
           .fontColor(MUTED_TEXT)
-        Text('基于中医养生理念的健康管理应用，提供健康数据记录、舌象观察、在线问诊、养生建议等功能。')
+        Text('健康管理工具应用，提供健康数据记录、舌象观察、养生建议、AI健康助手等功能。')
           .fontSize(13)
           .fontColor(MUTED_TEXT)
           .lineHeight(22)
@@ -1416,7 +1416,7 @@ export struct ProfileTab {
     }).catch(() => {
       this.consultations = [];
       this.consultationLoading = false;
-      this.consultationFeedback = '加载问诊记录失败，请稍后重试';
+      this.consultationFeedback = '加载咨询记录失败，请稍后重试';
     });
   }
 

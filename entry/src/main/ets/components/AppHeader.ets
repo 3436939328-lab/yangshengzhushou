@@ -9,7 +9,7 @@ export struct AppHeader {
   build() {
     Row() {
       Column() {
-        Text('养生助手')
+        Text('茹安阁')
           .fontSize(28)
           .fontWeight(FontWeight.Bold)
           .fontColor(Color.White)

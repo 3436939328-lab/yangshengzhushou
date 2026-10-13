@@ -53,7 +53,7 @@ export struct AuthView {
   build() {
     Column() {
       Blank()
-      Text('养生助手')
+      Text('茹安阁')
         .fontSize(34)
         .fontWeight(FontWeight.Bold)
         .fontColor(DEEP_TEXT)
@@ -147,7 +147,7 @@ export struct AuthView {
           this.RoleOptionButton('医生入驻', 'DOCTOR')
         }
         .width('100%')
-        Text(this.registerRoleCode === 'DOCTOR' ? '医生身份用于接收和回复用户一对一问诊，后续上线会加入资质审核。' : '普通用户可使用养生助手、健康档案和一对一问诊。')
+        Text(this.registerRoleCode === 'DOCTOR' ? '健康顾问身份用于提供养生咨询与健康建议。' : '普通用户可使用健康助手、健康档案和养生咨询。')
           .fontSize(12)
           .fontColor(MUTED_TEXT)
           .lineHeight(18)

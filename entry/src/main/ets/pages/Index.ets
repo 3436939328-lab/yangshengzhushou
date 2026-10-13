@@ -193,7 +193,7 @@ struct Index {
   @Builder
   AuthCheckingView() {
     Column() {
-      Text('养生助手')
+      Text('茹安阁')
         .fontSize(24)
         .fontWeight(FontWeight.Bold)
         .fontColor(Color.White)
