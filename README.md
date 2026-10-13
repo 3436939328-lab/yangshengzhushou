@@ -1,4 +1,4 @@
-# 养生助手 (YangShengZhuShou)
+# 茹安阁 (YangShengZhuShou)
 
 > 一款基于 HarmonyOS + Spring Boot 的智能养生健康管理应用，融合 AI 对话、舌象分析、健康档案、在线问诊、亲人关怀等功能。
 
